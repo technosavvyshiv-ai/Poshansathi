@@ -7,6 +7,8 @@ and cached on Flask's ``g`` object.
 
 from __future__ import annotations
 
+from datetime import date
+
 from flask import g, session
 
 from app.extensions import db
@@ -42,3 +44,19 @@ def user_has_role(*roles) -> bool:
     """Return True when the current user's role is one of ``roles``."""
     user = current_user()
     return user is not None and user.role in roles
+
+
+def age_years(date_of_birth) -> int | None:
+    """Return completed years for a date of birth, or ``None``.
+
+    Registered as a Jinja filter (``|age_years``) so templates can display a
+    beneficiary's age without embedding arithmetic in the markup.
+    """
+    if not date_of_birth:
+        return None
+    today = date.today()
+    return (
+        today.year
+        - date_of_birth.year
+        - ((today.month, today.day) < (date_of_birth.month, date_of_birth.day))
+    )

@@ -7,6 +7,22 @@
       </a>
     </li>
 
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('beneficiaries.') }}"
+         href="{{ url_for('beneficiaries.index') }}">
+        <i class="bi bi-people me-2"></i> Beneficiaries
+      </a>
+    </li>
+
+    {% if current_user.role in [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.OFFICER] %}
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('centres.') }}"
+         href="{{ url_for('centres.index') }}">
+        <i class="bi bi-geo-alt me-2"></i> Centres
+      </a>
+    </li>
+    {% endif %}
+
     {% if current_user.role == UserRole.ADMIN %}
     <li class="nav-item">
       <a class="nav-link {{ 'active' if request.endpoint == 'admin.index' }}"
@@ -18,6 +34,6 @@
   </ul>
 
   <p class="sidebar-note small text-muted px-3 mt-3 mb-0">
-    Feature modules are added in later phases.
+    Further modules are added in later phases.
   </p>
 </nav>

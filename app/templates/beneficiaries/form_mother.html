@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if mode == 'edit' else 'Register' }} {{ kind_label|title }}{% endblock %}
+
+{% macro field_error(errors, name) %}
+  {% if errors.get(name) %}
+    <div class="invalid-feedback d-block">{{ errors.get(name) }}</div>
+  {% endif %}
+{% endmacro %}
+
+{% set is_pregnant = beneficiary_type.value == 'PREGNANT_WOMAN' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">
+    <i class="bi bi-person-hearts me-2"></i>
+    {{ 'Edit' if mode == 'edit' else 'Register' }} {{ kind_label }}
+  </h1>
+  <a class="btn btn-outline-secondary btn-sm"
+     href="{{ url_for('beneficiaries.detail', beneficiary_id=beneficiary.id)
+              if mode == 'edit' else url_for('beneficiaries.index') }}">
+    <i class="bi bi-arrow-left me-1"></i>Cancel
+  </a>
+</div>
+
+<form method="post" novalidate
+      action="{{ url_for('beneficiaries.edit', beneficiary_id=beneficiary.id)
+                if mode == 'edit'
+                else url_for('beneficiaries.create_mother', kind='pregnant' if is_pregnant else 'lactating') }}">
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card shadow-sm mb-3">
+        <div class="card-header bg-white fw-semibold">Basic details</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="full_name" class="form-label">Full name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control {{ 'is-invalid' if errors.get('full_name') }}"
+                     id="full_name" name="full_name" maxlength="150"
+                     value="{{ form.get('full_name', '') }}" required>
+              {{ field_error(errors, 'full_name') }}
+            </div>
+            <div class="col-md-6">
+              <label for="date_of_birth" class="form-label">Date of birth</label>
+              <input type="date" class="form-control {{ 'is-invalid' if errors.get('date_of_birth') }}"
+                     id="date_of_birth" name="date_of_birth"
+                     value="{{ form.get('date_of_birth', '') }}">
+              {{ field_error(errors, 'date_of_birth') }}
+            </div>
+            <div class="col-md-4">
+              <label for="age" class="form-label">Age (years)</label>
+              <input type="number" min="12" max="60"
+                     class="form-control {{ 'is-invalid' if errors.get('age') }}"
+                     id="age" name="age" value="{{ form.get('age', '') }}">
+              {{ field_error(errors, 'age') }}
+            </div>
+            <div class="col-md-4">
+              <label for="husband_name" class="form-label">Husband name</label>
+              <input type="text" class="form-control {{ 'is-invalid' if errors.get('husband_name') }}"
+                     id="husband_name" name="husband_name" maxlength="150"
+                     value="{{ form.get('husband_name', '') }}">
+              {{ field_error(errors, 'husband_name') }}
+            </div>
+            <div class="col-md-4">
+              <label for="blood_group" class="form-label">Blood group</label>
+              <select class="form-select {{ 'is-invalid' if errors.get('blood_group') }}"
+                      id="blood_group" name="blood_group">
+                <option value="">Unknown</option>
+                {% for bg in ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'] %}
+                <option value="{{ bg }}" {{ 'selected' if form.get('blood_group') == bg }}>{{ bg }}</option>
+                {% endfor %}
+              </select>
+              {{ field_error(errors, 'blood_group') }}
+            </div>
+            <div class="col-md-6">
+              <label for="guardian_name" class="form-label">Guardian / family name</label>
+              <input type="text" class="form-control {{ 'is-invalid' if errors.get('guardian_name') }}"
+                     id="guardian_name" name="guardian_name" maxlength="150"
+                     value="{{ form.get('guardian_name', '') }}">
+              {{ field_error(errors, 'guardian_name') }}
+            </div>
+            <div class="col-md-6">
+              <label for="contact" class="form-label">Contact number</label>
+              <input type="text" class="form-control {{ 'is-invalid' if errors.get('contact') }}"
+                     id="contact" name="contact" maxlength="20"
+                     value="{{ form.get('contact', '') }}" placeholder="10-digit mobile">
+              {{ field_error(errors, 'contact') }}
+            </div>
+            <div class="col-12">
+              <label for="address" class="form-label">Address</label>
+              <input type="text" class="form-control {{ 'is-invalid' if errors.get('address') }}"
+                     id="address" name="address" maxlength="255"
+                     value="{{ form.get('address', '') }}">
+              {{ field_error(errors, 'address') }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-header bg-white fw-semibold">
+          {{ 'Pregnancy profile' if is_pregnant else 'Lactation profile' }}
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label for="pregnancy_number" class="form-label">Pregnancy number</label>
+              <input type="number" min="1" max="10"
+                     class="form-control {{ 'is-invalid' if errors.get('pregnancy_number') }}"
+                     id="pregnancy_number" name="pregnancy_number"
+                     value="{{ form.get('pregnancy_number', '') }}">
+              {{ field_error(errors, 'pregnancy_number') }}
+            </div>
+            {% if is_pregnant %}
+            <div class="col-md-4">
+              <label for="last_menstrual_period" class="form-label">Last menstrual period</label>
+              <input type="date" class="form-control {{ 'is-invalid' if errors.get('last_menstrual_period') }}"
+                     id="last_menstrual_period" name="last_menstrual_period"
+                     value="{{ form.get('last_menstrual_period', '') }}">
+              {{ field_error(errors, 'last_menstrual_period') }}
+            </div>
+            <div class="col-md-4">
+              <label for="expected_delivery_date" class="form-label">Expected delivery date</label>
+              <input type="date" class="form-control {{ 'is-invalid' if errors.get('expected_delivery_date') }}"
+                     id="expected_delivery_date" name="expected_delivery_date"
+                     value="{{ form.get('expected_delivery_date', '') }}">
+              {{ field_error(errors, 'expected_delivery_date') }}
+            </div>
+            {% else %}
+            <div class="col-md-4">
+              <label for="delivery_date" class="form-label">Delivery date</label>
+              <input type="date" class="form-control {{ 'is-invalid' if errors.get('delivery_date') }}"
+                     id="delivery_date" name="delivery_date"
+                     value="{{ form.get('delivery_date', '') }}">
+              {{ field_error(errors, 'delivery_date') }}
+            </div>
+            {% endif %}
+            <div class="col-md-4">
+              <label for="height_cm" class="form-label">Height (cm)</label>
+              <input type="number" step="0.1" min="100" max="200"
+                     class="form-control {{ 'is-invalid' if errors.get('height_cm') }}"
+                     id="height_cm" name="height_cm" value="{{ form.get('height_cm', '') }}">
+              {{ field_error(errors, 'height_cm') }}
+            </div>
+            <div class="col-md-4">
+              <label for="current_risk_level" class="form-label">Risk level</label>
+              <select class="form-select {{ 'is-invalid' if errors.get('current_risk_level') }}"
+                      id="current_risk_level" name="current_risk_level">
+                {% for value in ['LOW', 'MODERATE', 'HIGH'] %}
+                <option value="{{ value }}" {{ 'selected' if form.get('current_risk_level', 'LOW') == value }}>
+                  {{ value.title() }}
+                </option>
+                {% endfor %}
+              </select>
+              {{ field_error(errors, 'current_risk_level') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm mb-3">
+        <div class="card-header bg-white fw-semibold">Registration</div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">Anganwadi centre <span class="text-danger">*</span></label>
+            {% if current_user.role == UserRole.AWW and current_user.centre %}
+              <input type="hidden" name="centre_id" value="{{ current_user.centre.id }}">
+              <input type="text" class="form-control" value="{{ current_user.centre.name }}" disabled>
+            {% else %}
+              <select class="form-select {{ 'is-invalid' if errors.get('centre_id') }}"
+                      id="centre_id" name="centre_id" required>
+                <option value="">Select…</option>
+                {% for centre in centres %}
+                <option value="{{ centre.id }}" {{ 'selected' if form.get('centre_id') == centre.id|string }}>
+                  {{ centre.name }}
+                </option>
+                {% endfor %}
+              </select>
+            {% endif %}
+            {{ field_error(errors, 'centre_id') }}
+          </div>
+          <div>
+            <label for="registration_date" class="form-label">Registration date</label>
+            <input type="date" class="form-control {{ 'is-invalid' if errors.get('registration_date') }}"
+                   id="registration_date" name="registration_date"
+                   value="{{ form.get('registration_date', '') }}">
+            {{ field_error(errors, 'registration_date') }}
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-success w-100">
+        <i class="bi bi-check2-circle me-1"></i>
+        {{ 'Save changes' if mode == 'edit' else 'Register ' + kind_label }}
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}

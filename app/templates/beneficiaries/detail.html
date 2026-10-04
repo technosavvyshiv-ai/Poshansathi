@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% block title %}{{ beneficiary.full_name }}{% endblock %}
+
+{% set type_labels = {
+  'CHILD': 'Child',
+  'PREGNANT_WOMAN': 'Pregnant Woman',
+  'LACTATING_MOTHER': 'Lactating Mother'
+} %}
+{% set type_badges = {
+  'CHILD': 'text-bg-primary',
+  'PREGNANT_WOMAN': 'text-bg-warning',
+  'LACTATING_MOTHER': 'text-bg-info'
+} %}
+{% set can_write = current_user.role in [UserRole.ADMIN, UserRole.AWW] %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
+  <div>
+    <h1 class="h3 mb-1">
+      <i class="bi bi-person-badge me-2"></i>{{ beneficiary.full_name }}
+      <span class="badge {{ type_badges.get(beneficiary.beneficiary_type.value, 'text-bg-secondary') }} align-middle">
+        {{ type_labels.get(beneficiary.beneficiary_type.value, beneficiary.beneficiary_type.value) }}
+      </span>
+      {% if beneficiary.status.value == 'ACTIVE' %}
+        <span class="badge text-bg-success align-middle">Active</span>
+      {% else %}
+        <span class="badge text-bg-secondary align-middle">Inactive</span>
+      {% endif %}
+    </h1>
+    <p class="text-muted small mb-0">
+      Registered {{ beneficiary.registration_date.strftime('%d %b %Y') if beneficiary.registration_date else '—' }}
+      &middot; {{ beneficiary.centre.name if beneficiary.centre else '—' }}
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('beneficiaries.index') }}">
+      <i class="bi bi-arrow-left me-1"></i>Back
+    </a>
+    {% if can_write %}
+    <a class="btn btn-outline-primary btn-sm"
+       href="{{ url_for('beneficiaries.edit', beneficiary_id=beneficiary.id) }}">
+      <i class="bi bi-pencil me-1"></i>Edit
+    </a>
+    {% if beneficiary.status.value == 'ACTIVE' %}
+    <form method="post" data-confirm="Deactivate {{ beneficiary.full_name }}?"
+          action="{{ url_for('beneficiaries.deactivate', beneficiary_id=beneficiary.id) }}">
+      <button type="submit" class="btn btn-outline-danger btn-sm">
+        <i class="bi bi-person-dash me-1"></i>Deactivate
+      </button>
+    </form>
+    {% else %}
+    <form method="post"
+          action="{{ url_for('beneficiaries.activate', beneficiary_id=beneficiary.id) }}">
+      <button type="submit" class="btn btn-outline-success btn-sm">
+        <i class="bi bi-person-check me-1"></i>Reactivate
+      </button>
+    </form>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">Demographic details</div>
+      <div class="card-body">
+        <dl class="row mb-0 small">
+          <dt class="col-5">Full name</dt><dd class="col-7">{{ beneficiary.full_name }}</dd>
+          <dt class="col-5">Date of birth</dt>
+          <dd class="col-7">
+            {{ beneficiary.date_of_birth.strftime('%d %b %Y') if beneficiary.date_of_birth else '—' }}
+            {% if beneficiary.date_of_birth %}
+              <span class="text-muted">({{ beneficiary.date_of_birth|age_years }} yrs)</span>
+            {% endif %}
+          </dd>
+          <dt class="col-5">Gender</dt>
+          <dd class="col-7">{{ beneficiary.gender.value.title() if beneficiary.gender else '—' }}</dd>
+          <dt class="col-5">Guardian name</dt><dd class="col-7">{{ beneficiary.guardian_name or '—' }}</dd>
+          <dt class="col-5">Contact</dt><dd class="col-7">{{ beneficiary.contact or '—' }}</dd>
+          <dt class="col-5">Address</dt><dd class="col-7">{{ beneficiary.address or '—' }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    {% if beneficiary.beneficiary_type.value == 'CHILD' and beneficiary.child %}
+    {% set child = beneficiary.child %}
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">Child profile</div>
+      <div class="card-body">
+        <dl class="row mb-0 small">
+          <dt class="col-5">Birth weight</dt>
+          <dd class="col-7">{{ child.birth_weight_kg ~ ' kg' if child.birth_weight_kg else '—' }}</dd>
+          <dt class="col-5">Birth height</dt>
+          <dd class="col-7">{{ child.birth_height_cm ~ ' cm' if child.birth_height_cm else '—' }}</dd>
+          <dt class="col-5">Blood group</dt><dd class="col-7">{{ child.blood_group or '—' }}</dd>
+          <dt class="col-5">Linked mother</dt>
+          <dd class="col-7">
+            {% if child.mother %}
+              <a href="{{ url_for('beneficiaries.detail', beneficiary_id=child.mother.beneficiary_id) }}">
+                {{ child.mother.beneficiary.full_name }}
+              </a>
+            {% else %}—{% endif %}
+          </dd>
+        </dl>
+      </div>
+    </div>
+    {% elif beneficiary.mother %}
+    {% set mother = beneficiary.mother %}
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">
+        {{ 'Pregnancy profile' if beneficiary.beneficiary_type.value == 'PREGNANT_WOMAN' else 'Lactation profile' }}
+      </div>
+      <div class="card-body">
+        <dl class="row mb-0 small">
+          <dt class="col-5">Age</dt><dd class="col-7">{{ mother.age or '—' }}</dd>
+          <dt class="col-5">Husband name</dt><dd class="col-7">{{ mother.husband_name or '—' }}</dd>
+          <dt class="col-5">Pregnancy number</dt><dd class="col-7">{{ mother.pregnancy_number or '—' }}</dd>
+          {% if beneficiary.beneficiary_type.value == 'PREGNANT_WOMAN' %}
+          <dt class="col-5">Last menstrual period</dt>
+          <dd class="col-7">{{ mother.last_menstrual_period.strftime('%d %b %Y') if mother.last_menstrual_period else '—' }}</dd>
+          <dt class="col-5">Expected delivery</dt>
+          <dd class="col-7">{{ mother.expected_delivery_date.strftime('%d %b %Y') if mother.expected_delivery_date else '—' }}</dd>
+          {% else %}
+          <dt class="col-5">Delivery date</dt>
+          <dd class="col-7">{{ mother.delivery_date.strftime('%d %b %Y') if mother.delivery_date else '—' }}</dd>
+          {% endif %}
+          <dt class="col-5">Blood group</dt><dd class="col-7">{{ mother.blood_group or '—' }}</dd>
+          <dt class="col-5">Height</dt>
+          <dd class="col-7">{{ mother.height_cm ~ ' cm' if mother.height_cm else '—' }}</dd>
+          <dt class="col-5">Risk level</dt>
+          <dd class="col-7">
+            <span class="badge {{ 'text-bg-danger' if mother.current_risk_level.value == 'HIGH'
+                                   else 'text-bg-warning' if mother.current_risk_level.value == 'MODERATE'
+                                   else 'text-bg-success' }}">
+              {{ mother.current_risk_level.value.title() }}
+            </span>
+          </dd>
+        </dl>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white fw-semibold">Related records</div>
+      <div class="card-body">
+        <div class="row text-center g-3">
+          {% if beneficiary.beneficiary_type.value == 'CHILD' and beneficiary.child %}
+          <div class="col-6 col-md-3">
+            <div class="small text-muted">Growth records</div>
+            <div class="h4 mb-0">{{ beneficiary.child.growth_records|length }}</div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="small text-muted">Vaccinations</div>
+            <div class="h4 mb-0">{{ beneficiary.child.vaccinations|length }}</div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="small text-muted">Attendance records</div>
+            <div class="h4 mb-0">{{ beneficiary.child.attendance_records|length }}</div>
+          </div>
+          {% else %}
+          <div class="col-6 col-md-3">
+            <div class="small text-muted">Maternal health records</div>
+            <div class="h4 mb-0">{{ beneficiary.mother.health_records|length if beneficiary.mother else 0 }}</div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="small text-muted">Linked children</div>
+            <div class="h4 mb-0">{{ beneficiary.mother.children|length if beneficiary.mother else 0 }}</div>
+          </div>
+          {% endif %}
+          <div class="col-6 col-md-3">
+            <div class="small text-muted">Home visits</div>
+            <div class="h4 mb-0">{{ beneficiary.home_visits|length }}</div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="small text-muted">Open alerts</div>
+            <div class="h4 mb-0">
+              {{ beneficiary.alerts | selectattr('status.value', 'equalto', 'OPEN') | list | length }}
+            </div>
+          </div>
+        </div>
+        <p class="text-muted small mb-0 mt-3">
+          <i class="bi bi-info-circle me-1"></i>
+          Health records, growth tracking, vaccination, alerts and reports are
+          added in later phases.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

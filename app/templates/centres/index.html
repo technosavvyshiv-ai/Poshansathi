@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% import 'components/pagination.html' as pg %}
+{% block title %}Anganwadi Centres{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <div>
+    <h1 class="h3 mb-0"><i class="bi bi-geo-alt me-2"></i>Anganwadi Centres</h1>
+    <p class="text-muted small mb-0">Centres to which users and beneficiaries belong.</p>
+  </div>
+  {% if can_manage %}
+  <a class="btn btn-success" href="{{ url_for('centres.create') }}">
+    <i class="bi bi-plus-circle me-1"></i>Add centre
+  </a>
+  {% endif %}
+</div>
+
+<div class="card shadow-sm mb-3">
+  <div class="card-body">
+    <form method="get" action="{{ url_for('centres.index') }}" class="row g-2 align-items-end">
+      <div class="col-12 col-md-6">
+        <label for="q" class="form-label small mb-1">Search</label>
+        <input type="text" class="form-control form-control-sm" id="q" name="q"
+               value="{{ q }}" placeholder="Name, code, village or district">
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="form-check mt-4">
+          <input class="form-check-input" type="checkbox" value="1" id="active" name="active"
+                 {{ 'checked' if active_only }}>
+          <label class="form-check-label small" for="active">Active only</label>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 d-flex gap-1">
+        <button type="submit" class="btn btn-sm btn-success flex-grow-1">
+          <i class="bi bi-search me-1"></i>Search
+        </button>
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('centres.index') }}">Clear</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Name</th>
+          <th>Code</th>
+          <th>Village</th>
+          <th>District</th>
+          <th>Phone</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for centre in pagination.items %}
+        <tr>
+          <td>
+            <a class="fw-semibold text-decoration-none"
+               href="{{ url_for('centres.detail', centre_id=centre.id) }}">{{ centre.name }}</a>
+          </td>
+          <td class="small"><code>{{ centre.code }}</code></td>
+          <td class="small">{{ centre.village or '—' }}</td>
+          <td class="small">{{ centre.district or '—' }}</td>
+          <td class="small">{{ centre.phone or '—' }}</td>
+          <td>
+            {% if centre.is_active %}
+              <span class="badge text-bg-success">Active</span>
+            {% else %}
+              <span class="badge text-bg-secondary">Inactive</span>
+            {% endif %}
+          </td>
+          <td class="text-end text-nowrap">
+            <a class="btn btn-sm btn-outline-secondary"
+               href="{{ url_for('centres.detail', centre_id=centre.id) }}" title="View">
+              <i class="bi bi-eye"></i>
+            </a>
+            {% if can_manage %}
+            <a class="btn btn-sm btn-outline-primary"
+               href="{{ url_for('centres.edit', centre_id=centre.id) }}" title="Edit">
+              <i class="bi bi-pencil"></i>
+            </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="text-center text-muted py-5">
+            <i class="bi bi-buildings display-6 d-block mb-2"></i>
+            No centres found.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if pagination.items %}
+<p class="text-muted small mt-2 mb-0">
+  Showing {{ pagination.items|length }} of {{ pagination.total }} centre(s).
+</p>
+{% endif %}
+
+{{ pg.render(pagination, 'centres.index', {'q': q, 'active': '1' if active_only else ''}) }}
+{% endblock %}

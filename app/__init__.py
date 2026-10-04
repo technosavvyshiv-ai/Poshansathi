@@ -87,7 +87,9 @@ def _register_request_hooks(app: Flask) -> None:
 def _register_context_processors(app: Flask) -> None:
     """Expose auth-related globals to every template."""
     from app.utils.constants import ROLE_LABELS, UserRole
-    from app.utils.helpers import current_user
+    from app.utils.helpers import age_years, current_user
+
+    app.add_template_filter(age_years, "age_years")
 
     @app.context_processor
     def inject_auth_context():
@@ -102,11 +104,15 @@ def _register_blueprints(app: Flask) -> None:
     """Register application blueprints."""
     from app.routes.admin import bp as admin_bp
     from app.routes.auth import bp as auth_bp
+    from app.routes.beneficiaries import bp as beneficiaries_bp
+    from app.routes.centres import bp as centres_bp
     from app.routes.dashboard import bp as dashboard_bp
     from app.routes.main import bp as main_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(beneficiaries_bp)
+    app.register_blueprint(centres_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(main_bp)
 
