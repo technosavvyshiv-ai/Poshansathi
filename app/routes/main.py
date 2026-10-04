@@ -24,4 +24,4 @@ def index():
 @bp.get("/healthz")
 def healthz():
     """Lightweight health check used by sanity tests and deployments."""
-    return jsonify(status="ok", app="PoshanSathi", phase="3")
+    return jsonify(status="ok", app="PoshanSathi", phase="4")

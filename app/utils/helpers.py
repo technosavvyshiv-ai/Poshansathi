@@ -9,10 +9,10 @@ from __future__ import annotations
 
 from datetime import date
 
-from flask import g, session
+from flask import abort, g, session
 
 from app.extensions import db
-from app.models import User
+from app.models import Beneficiary, User
 
 
 def load_logged_in_user() -> None:
@@ -60,3 +60,23 @@ def age_years(date_of_birth) -> int | None:
         - date_of_birth.year
         - ((today.month, today.day) < (date_of_birth.month, date_of_birth.day))
     )
+
+
+# ---------------------------------------------------------------------------
+# Centre scoping / access control (shared by beneficiary and growth routes)
+# ---------------------------------------------------------------------------
+def scope_centre_id(user) -> int | None:
+    """Return the centre an AWW is limited to, or ``None`` when unscoped.
+
+    Only AWW users are centre-scoped; ADMIN/SUPERVISOR/OFFICER see all centres.
+    """
+    if user is not None and user.role.value == "AWW" and user.centre_id:
+        return user.centre_id
+    return None
+
+
+def ensure_beneficiary_access(user, beneficiary) -> None:
+    """Abort with 403 when an AWW requests another centre's beneficiary."""
+    scope = scope_centre_id(user)
+    if scope is not None and beneficiary.centre_id != scope:
+        abort(403)

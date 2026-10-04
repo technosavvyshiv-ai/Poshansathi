@@ -107,12 +107,14 @@ def _register_blueprints(app: Flask) -> None:
     from app.routes.beneficiaries import bp as beneficiaries_bp
     from app.routes.centres import bp as centres_bp
     from app.routes.dashboard import bp as dashboard_bp
+    from app.routes.growth import bp as growth_bp
     from app.routes.main import bp as main_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(beneficiaries_bp)
     app.register_blueprint(centres_bp)
+    app.register_blueprint(growth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(main_bp)
 

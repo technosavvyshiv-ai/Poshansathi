@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% block title %}Growth — {{ child.beneficiary.full_name }}{% endblock %}
+
+{% set status_badges = {
+  'NORMAL': 'text-bg-success',
+  'UNDERWEIGHT': 'text-bg-warning',
+  'SEVERE_UNDERWEIGHT': 'text-bg-danger',
+  'OVERWEIGHT': 'text-bg-secondary'
+} %}
+{% set status_labels = {
+  'NORMAL': 'Normal',
+  'UNDERWEIGHT': 'Underweight',
+  'SEVERE_UNDERWEIGHT': 'Severe underweight',
+  'OVERWEIGHT': 'Overweight'
+} %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
+  <div>
+    <h1 class="h3 mb-1">
+      <i class="bi bi-graph-up-arrow me-2"></i>Growth
+    </h1>
+    <p class="text-muted small mb-0">
+      <a class="text-decoration-none"
+         href="{{ url_for('beneficiaries.detail', beneficiary_id=beneficiary.id) }}">
+        {{ beneficiary.full_name }}
+      </a>
+      &middot; DOB {{ beneficiary.date_of_birth.strftime('%d %b %Y') if beneficiary.date_of_birth else '—' }}
+      &middot; {{ beneficiary.centre.name if beneficiary.centre else '—' }}
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm"
+       href="{{ url_for('beneficiaries.detail', beneficiary_id=beneficiary.id) }}">
+      <i class="bi bi-person-badge me-1"></i>Profile
+    </a>
+    {% if can_write %}
+    <a class="btn btn-success btn-sm" href="{{ url_for('growth.create', child_id=child.id) }}">
+      <i class="bi bi-plus-circle me-1"></i>Record measurement
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Current status</div>
+        {% if latest and latest.status %}
+          <span class="badge {{ status_badges.get(latest.status.value, 'text-bg-secondary') }} mt-1">
+            {{ status_labels.get(latest.status.value, latest.status.value) }}
+          </span>
+        {% else %}
+          <div class="text-muted mt-1">No records</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Latest weight</div>
+        <div class="h4 mb-0">
+          {{ latest.record.weight_kg ~ ' kg' if latest and latest.record.weight_kg is not none else '—' }}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Latest height</div>
+        <div class="h4 mb-0">
+          {{ latest.record.height_cm ~ ' cm' if latest and latest.record.height_cm is not none else '—' }}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Age at last record</div>
+        <div class="h4 mb-0">{{ latest.age_label if latest else '—' }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if latest and latest.status %}
+<div class="alert alert-info d-flex align-items-start gap-2">
+  <i class="bi bi-info-circle mt-1"></i>
+  <div class="small">
+    <strong>{{ status_labels.get(latest.status.value, latest.status.value) }}</strong>
+    — {{ latest.explanation }}
+    <div class="text-muted">Rule set: <code>{{ rule_id }}</code></div>
+  </div>
+</div>
+{% endif %}
+
+<div class="card shadow-sm mb-3">
+  <div class="card-header bg-white fw-semibold">Trend</div>
+  <div class="card-body">
+    {% if history %}
+      <canvas id="growthChart" height="90"></canvas>
+    {% else %}
+      <p class="text-muted text-center py-5 mb-0">
+        <i class="bi bi-graph-up display-6 d-block mb-2"></i>
+        No growth records yet.
+        {% if can_write %}Record the first measurement to see the trend.{% endif %}
+      </p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header bg-white fw-semibold">Growth history</div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Date</th>
+          <th>Age</th>
+          <th>Weight</th>
+          <th>Height</th>
+          <th>MUAC</th>
+          <th>Status</th>
+          <th>Notes</th>
+          {% if can_write %}<th class="text-end">Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in history %}
+        <tr>
+          <td class="small">{{ item.record.measurement_date.strftime('%d %b %Y') }}</td>
+          <td class="small">{{ item.age_label }}</td>
+          <td class="small">{{ item.record.weight_kg ~ ' kg' if item.record.weight_kg is not none else '—' }}</td>
+          <td class="small">{{ item.record.height_cm ~ ' cm' if item.record.height_cm is not none else '—' }}</td>
+          <td class="small">{{ item.record.muac_cm ~ ' cm' if item.record.muac_cm is not none else '—' }}</td>
+          <td>
+            {% if item.status %}
+              <span class="badge {{ status_badges.get(item.status.value, 'text-bg-secondary') }}">
+                {{ status_labels.get(item.status.value, item.status.value) }}
+              </span>
+            {% else %}&mdash;{% endif %}
+          </td>
+          <td class="small text-muted">{{ item.record.notes or '—' }}</td>
+          {% if can_write %}
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-primary"
+               href="{{ url_for('growth.edit', child_id=child.id, record_id=item.record.id) }}"
+               title="Edit"><i class="bi bi-pencil"></i></a>
+          </td>
+          {% endif %}
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="{{ 8 if can_write else 7 }}" class="text-center text-muted py-5">
+            No growth records found.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<p class="text-muted small mt-3 mb-0">
+  <i class="bi bi-info-circle me-1"></i>
+  Status uses a project-defined <strong>demonstration rule</strong>
+  (weight-for-age). It is not an official growth reference and must not be used
+  for medical decisions.
+</p>
+
+<script id="growth-chart-data" type="application/json">{{ chart | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/growth.js') }}"></script>
+{% endblock %}

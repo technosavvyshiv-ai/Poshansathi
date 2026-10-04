@@ -38,6 +38,13 @@ class Config:
 
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
+    # --- Growth classification (Phase 4) -----------------------------------
+    # Optional override for the documented DEMO growth rule set.  When left as
+    # None the built-in demo rules in app/utils/growth_rules.py are used.  Set
+    # this to a GrowthDemoRules instance to change the thresholds without
+    # touching code.  These are demonstration rules, not clinical thresholds.
+    GROWTH_DEMO_RULES = None
+
     # --- Session / cookie security (Phase 2 authentication) ----------------
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"

@@ -338,6 +338,67 @@ def validate_centre_fields(form):
     return cleaned, errors
 
 
+# ---------------------------------------------------------------------------
+# Growth record validation (Phase 4)
+# ---------------------------------------------------------------------------
+def validate_growth_fields(form, child):
+    """Validate a growth measurement for ``child``.
+
+    Bounds are broad data-integrity guards, **not** clinical thresholds.  The
+    growth *status* is decided separately by the documented demo rules in
+    :mod:`app.utils.growth_rules`.
+    """
+    errors: dict[str, str] = {}
+    date_of_birth = child.beneficiary.date_of_birth if child.beneficiary else None
+
+    cleaned = {
+        "measurement_date": _parse_date(
+            form,
+            "measurement_date",
+            errors,
+            required=True,
+            not_future=True,
+            label="Measurement date",
+        ),
+        "weight_kg": _parse_decimal(
+            form,
+            "weight_kg",
+            errors,
+            minimum=Decimal("0.5"),
+            maximum=Decimal("100"),
+            label="Weight (kg)",
+        ),
+        "height_cm": _parse_decimal(
+            form,
+            "height_cm",
+            errors,
+            minimum=Decimal("20"),
+            maximum=Decimal("200"),
+            label="Height (cm)",
+        ),
+        "muac_cm": _parse_decimal(
+            form,
+            "muac_cm",
+            errors,
+            minimum=Decimal("5"),
+            maximum=Decimal("40"),
+            label="MUAC (cm)",
+        ),
+        "notes": _parse_str(form, "notes", errors, max_len=1000, label="Notes"),
+    }
+
+    if cleaned.get("weight_kg") is None and "weight_kg" not in errors:
+        errors["weight_kg"] = "Weight (kg) is required."
+
+    measurement_date = cleaned.get("measurement_date")
+    if measurement_date and date_of_birth and measurement_date < date_of_birth:
+        errors["measurement_date"] = (
+            "Measurement date cannot be before the child's date of birth."
+        )
+
+    return cleaned, errors
+
+
 __all__ = [
     "BLOOD_GROUPS",
     "MAX_CHILD_AGE_YEARS",
@@ -346,4 +407,5 @@ __all__ = [
     "validate_child_fields",
     "validate_mother_fields",
     "validate_centre_fields",
+    "validate_growth_fields",
 ]

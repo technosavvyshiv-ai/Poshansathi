@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if mode == 'edit' else 'Record' }} Growth — {{ child.beneficiary.full_name }}{% endblock %}
+
+{% macro field_error(errors, name) %}
+  {% if errors.get(name) %}
+    <div class="invalid-feedback d-block">{{ errors.get(name) }}</div>
+  {% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <div>
+    <h1 class="h3 mb-0">
+      <i class="bi bi-graph-up-arrow me-2"></i>
+      {{ 'Edit growth measurement' if mode == 'edit' else 'Record growth measurement' }}
+    </h1>
+    <p class="text-muted small mb-0">
+      {{ child.beneficiary.full_name }}
+      &middot; DOB {{ child.beneficiary.date_of_birth.strftime('%d %b %Y') if child.beneficiary.date_of_birth else '—' }}
+      &middot; {{ child.beneficiary.centre.name if child.beneficiary.centre else '—' }}
+    </p>
+  </div>
+  <a class="btn btn-outline-secondary btn-sm"
+     href="{{ url_for('growth.history', child_id=child.id) }}">
+    <i class="bi bi-arrow-left me-1"></i>Back to growth
+  </a>
+</div>
+
+<form method="post" novalidate
+      action="{{ url_for('growth.edit', child_id=child.id, record_id=record.id)
+                if mode == 'edit' else url_for('growth.create', child_id=child.id) }}">
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white fw-semibold">Measurement</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label for="measurement_date" class="form-label">
+                Measurement date <span class="text-danger">*</span>
+              </label>
+              <input type="date" class="form-control {{ 'is-invalid' if errors.get('measurement_date') }}"
+                     id="measurement_date" name="measurement_date"
+                     value="{{ form.get('measurement_date', '') }}" required>
+              {{ field_error(errors, 'measurement_date') }}
+            </div>
+            <div class="col-md-4">
+              <label for="weight_kg" class="form-label">
+                Weight (kg) <span class="text-danger">*</span>
+              </label>
+              <input type="number" step="0.01" min="0.5" max="100"
+                     class="form-control {{ 'is-invalid' if errors.get('weight_kg') }}"
+                     id="weight_kg" name="weight_kg"
+                     value="{{ form.get('weight_kg', '') }}" required>
+              {{ field_error(errors, 'weight_kg') }}
+            </div>
+            <div class="col-md-4">
+              <label for="height_cm" class="form-label">Height (cm)</label>
+              <input type="number" step="0.1" min="20" max="200"
+                     class="form-control {{ 'is-invalid' if errors.get('height_cm') }}"
+                     id="height_cm" name="height_cm" value="{{ form.get('height_cm', '') }}">
+              {{ field_error(errors, 'height_cm') }}
+            </div>
+            <div class="col-md-4">
+              <label for="muac_cm" class="form-label">MUAC (cm)</label>
+              <input type="number" step="0.1" min="5" max="40"
+                     class="form-control {{ 'is-invalid' if errors.get('muac_cm') }}"
+                     id="muac_cm" name="muac_cm" value="{{ form.get('muac_cm', '') }}">
+              {{ field_error(errors, 'muac_cm') }}
+            </div>
+            <div class="col-12">
+              <label for="notes" class="form-label">Notes</label>
+              <textarea class="form-control {{ 'is-invalid' if errors.get('notes') }}"
+                        id="notes" name="notes" rows="3" maxlength="1000">{{ form.get('notes', '') }}</textarea>
+              {{ field_error(errors, 'notes') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm mb-3 border-warning">
+        <div class="card-body">
+          <h2 class="h6"><i class="bi bi-info-circle me-1"></i>Demonstration rule</h2>
+          <p class="small text-muted mb-0">
+            Growth status is classified by a documented <strong>demo rule</strong>
+            (weight-for-age) and is <strong>not</strong> medical advice, a
+            diagnosis, or an official growth reference. Detection may raise a
+            growth follow-up flag for the child.
+          </p>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-success w-100">
+        <i class="bi bi-check2-circle me-1"></i>
+        {{ 'Save changes' if mode == 'edit' else 'Record measurement' }}
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}

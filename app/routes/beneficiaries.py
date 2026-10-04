@@ -23,7 +23,11 @@ from app.models import AnganwadiCentre, Beneficiary, Mother
 from app.services import beneficiary_service
 from app.utils.constants import BeneficiaryType, RecordStatus, UserRole
 from app.utils.decorators import login_required, role_required
-from app.utils.helpers import current_user
+from app.utils.helpers import (
+    current_user,
+    ensure_beneficiary_access,
+    scope_centre_id,
+)
 from app.utils.validators import ValidationError
 
 bp = Blueprint("beneficiaries", __name__, url_prefix="/beneficiaries")
@@ -53,16 +57,12 @@ MOTHER_KIND_LABELS = {
 # ---------------------------------------------------------------------------
 def _scope_centre_id(user) -> int | None:
     """Restrict an AWW to their own centre; other roles are unscoped."""
-    if user is not None and user.role == UserRole.AWW and user.centre_id:
-        return user.centre_id
-    return None
+    return scope_centre_id(user)
 
 
 def _ensure_access(user, beneficiary) -> None:
     """Abort with 403 when an AWW requests another centre's beneficiary."""
-    scope = _scope_centre_id(user)
-    if scope is not None and beneficiary.centre_id != scope:
-        abort(403)
+    ensure_beneficiary_access(user, beneficiary)
 
 
 def _resolve_centre(user, form):
