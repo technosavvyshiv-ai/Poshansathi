@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% block title %}Home Visits{% endblock %}
+
+{% set status_badges = {
+  'SCHEDULED': 'text-bg-info',
+  'COMPLETED': 'text-bg-success',
+  'CANCELLED': 'text-bg-secondary',
+  'MISSED': 'text-bg-danger'
+} %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <div>
+    <h1 class="h3 mb-1"><i class="bi bi-house-heart me-2"></i>Home visits</h1>
+    <p class="text-muted small mb-0">
+      Schedule visits, complete them and record interventions and follow-ups.
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('visits.index', follow_up='1') }}">
+      <i class="bi bi-arrow-repeat me-1"></i>Follow-ups
+    </a>
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('alerts.index') }}">
+      <i class="bi bi-exclamation-triangle me-1"></i>Alerts
+    </a>
+    {% if can_write %}
+    <a class="btn btn-success btn-sm" href="{{ url_for('visits.create') }}">
+      <i class="bi bi-plus-circle me-1"></i>Schedule visit
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Scheduled</div>
+        <div class="h4 mb-0 text-info-emphasis">{{ summary.SCHEDULED }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Completed</div>
+        <div class="h4 mb-0 text-success">{{ summary.COMPLETED }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Cancelled</div>
+        <div class="h4 mb-0 text-secondary">{{ summary.CANCELLED }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Missed</div>
+        <div class="h4 mb-0 text-danger">{{ summary.MISSED }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Total</div>
+        <div class="h4 mb-0">{{ summary.TOTAL }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+  <div class="card-body">
+    <form class="row g-2 align-items-end" method="get" action="{{ url_for('visits.index') }}">
+      {% if not scope_centre_id %}
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Centre</label>
+        <select class="form-select form-select-sm" name="centre">
+          <option value="">All centres</option>
+          {% for option in centres %}
+          <option value="{{ option.id }}" {{ 'selected' if centre_raw == option.id|string }}>{{ option.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Status</label>
+        <select class="form-select form-select-sm" name="status">
+          <option value="">All statuses</option>
+          {% for value in ['SCHEDULED','COMPLETED','CANCELLED','MISSED'] %}
+          <option value="{{ value }}" {{ 'selected' if status_raw == value }}>{{ value.title() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Type</label>
+        <select class="form-select form-select-sm" name="type">
+          <option value="">All types</option>
+          {% for value in ['ROUTINE','GROWTH','VACCINATION','MATERNAL','NUTRITION','FOLLOW_UP'] %}
+          <option value="{{ value }}" {{ 'selected' if type_raw == value }}>{{ value.replace('_', ' ').title() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" id="follow_up" name="follow_up" value="1"
+                 {{ 'checked' if follow_up_raw }}>
+          <label class="form-check-label small" for="follow_up">Follow-ups only</label>
+        </div>
+      </div>
+      <div class="col-md-1">
+        <button class="btn btn-outline-primary btn-sm w-100" type="submit">
+          <i class="bi bi-funnel"></i>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Scheduled</th>
+          <th>Beneficiary</th>
+          <th>Centre</th>
+          <th>Type</th>
+          <th>Assigned worker</th>
+          <th>Status</th>
+          <th>Follow-up</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for visit in visits %}
+        <tr>
+          <td class="small">{{ visit.scheduled_date.strftime('%d %b %Y') }}</td>
+          <td class="small">
+            <a class="text-decoration-none" href="{{ url_for('beneficiaries.detail', beneficiary_id=visit.beneficiary_id) }}">
+              {{ visit.beneficiary.full_name if visit.beneficiary else '—' }}
+            </a>
+          </td>
+          <td class="small">{{ visit.centre.name if visit.centre else '—' }}</td>
+          <td class="small">{{ visit.visit_type.value.replace('_', ' ').title() }}</td>
+          <td class="small">{{ visit.assigned_worker.full_name if visit.assigned_worker else '—' }}</td>
+          <td><span class="badge {{ status_badges.get(visit.status.value, 'text-bg-secondary') }}">{{ visit.status.value.title() }}</span></td>
+          <td class="small">
+            {% if visit.follow_up_required %}
+              <span class="badge text-bg-warning">Required</span>
+              {% if visit.follow_up_date %}<span class="text-muted">{{ visit.follow_up_date.strftime('%d %b %Y') }}</span>{% endif %}
+            {% else %}—{% endif %}
+          </td>
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('visits.detail', visit_id=visit.id) }}" title="Open">
+              <i class="bi bi-box-arrow-up-right"></i>
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" class="text-center text-muted py-5">
+            <i class="bi bi-house display-6 d-block mb-2"></i>
+            No home visits found.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

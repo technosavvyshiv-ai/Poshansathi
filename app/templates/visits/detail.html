@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% block title %}Home Visit #{{ visit.id }}{% endblock %}
+
+{% set status_badges = {
+  'SCHEDULED': 'text-bg-info',
+  'COMPLETED': 'text-bg-success',
+  'CANCELLED': 'text-bg-secondary',
+  'MISSED': 'text-bg-danger'
+} %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
+  <div>
+    <h1 class="h3 mb-1">
+      <i class="bi bi-house-heart me-2"></i>Home visit
+      <span class="badge {{ status_badges.get(visit.status.value, 'text-bg-secondary') }} align-middle">{{ visit.status.value.title() }}</span>
+    </h1>
+    <p class="text-muted small mb-0">
+      {{ visit.beneficiary.full_name if visit.beneficiary else '—' }}
+      &middot; {{ visit.centre.name if visit.centre else '—' }}
+      &middot; scheduled {{ visit.scheduled_date.strftime('%d %b %Y') }}
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('visits.index') }}">
+      <i class="bi bi-arrow-left me-1"></i>Home visits
+    </a>
+    {% if can_write and visit.status.value == 'SCHEDULED' %}
+    <a class="btn btn-outline-primary btn-sm" href="{{ url_for('visits.edit', visit_id=visit.id) }}">
+      <i class="bi bi-pencil me-1"></i>Edit
+    </a>
+    {% endif %}
+    {% if can_write %}
+    <a class="btn btn-success btn-sm" href="{{ url_for('visits.intervention_create', visit_id=visit.id) }}">
+      <i class="bi bi-clipboard-plus me-1"></i>Record intervention
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header bg-white fw-semibold">Visit details</div>
+      <div class="card-body">
+        <dl class="row mb-0 small">
+          <dt class="col-4">Beneficiary</dt>
+          <dd class="col-8">
+            <a href="{{ url_for('beneficiaries.detail', beneficiary_id=visit.beneficiary_id) }}">{{ visit.beneficiary.full_name if visit.beneficiary else '—' }}</a>
+          </dd>
+          <dt class="col-4">Visit type</dt>
+          <dd class="col-8">{{ visit.visit_type.value.replace('_', ' ').title() }}</dd>
+          <dt class="col-4">Assigned worker</dt>
+          <dd class="col-8">{{ visit.assigned_worker.full_name if visit.assigned_worker else '—' }}</dd>
+          <dt class="col-4">Scheduled date</dt>
+          <dd class="col-8">{{ visit.scheduled_date.strftime('%d %b %Y') }}</dd>
+          <dt class="col-4">Completed date</dt>
+          <dd class="col-8">{{ visit.completed_date.strftime('%d %b %Y') if visit.completed_date else '—' }}</dd>
+          <dt class="col-4">Follow-up</dt>
+          <dd class="col-8">
+            {% if visit.follow_up_required %}
+              <span class="badge text-bg-warning">Required</span>
+              {{ visit.follow_up_date.strftime('%d %b %Y') if visit.follow_up_date else '' }}
+            {% else %}Not required{% endif %}
+          </dd>
+          <dt class="col-4">Visit notes</dt>
+          <dd class="col-8">{{ visit.visit_notes or '—' }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-clipboard-check me-1"></i>Interventions</div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr><th>Date</th><th>Type</th><th>Outcome</th><th>Follow-up</th>{% if can_write %}<th class="text-end">Actions</th>{% endif %}</tr>
+          </thead>
+          <tbody>
+            {% for item in interventions %}
+            <tr>
+              <td class="small">{{ item.intervention_date.strftime('%d %b %Y') }}</td>
+              <td class="small fw-semibold">{{ item.intervention_type }}</td>
+              <td class="small text-muted">{{ item.outcome or '—' }}</td>
+              <td class="small">{{ item.follow_up_date.strftime('%d %b %Y') if item.follow_up_date else '—' }}</td>
+              {% if can_write %}
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('visits.intervention_edit', intervention_id=item.id) }}" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </a>
+              </td>
+              {% endif %}
+            </tr>
+            {% else %}
+            <tr><td colspan="{{ 5 if can_write else 4 }}" class="text-center text-muted py-4">No interventions recorded yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    {% if can_write and visit.status.value == 'SCHEDULED' %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-check2-circle me-1"></i>Complete visit</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('visits.complete', visit_id=visit.id) }}">
+          <div class="mb-2">
+            <label class="form-label small mb-1">Completion date</label>
+            <input type="date" class="form-control form-control-sm" name="completed_date" value="{{ visit.scheduled_date.isoformat() if visit.scheduled_date else '' }}" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small mb-1">Visit notes</label>
+            <textarea class="form-control form-control-sm" name="visit_notes" rows="2" maxlength="2000">{{ visit.visit_notes or '' }}</textarea>
+          </div>
+          <button class="btn btn-success btn-sm w-100" type="submit">Mark completed</button>
+        </form>
+        <form method="post" action="{{ url_for('visits.cancel', visit_id=visit.id) }}" class="mt-2">
+          <button class="btn btn-outline-secondary btn-sm w-100" type="submit">Cancel visit</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-exclamation-triangle me-1"></i>Open alerts</div>
+      <div class="list-group list-group-flush">
+        {% for alert in open_alerts %}
+        <a class="list-group-item list-group-item-action small" href="{{ url_for('alerts.detail', alert_id=alert.id) }}">
+          <span class="badge text-bg-secondary me-1">{{ alert.severity.value.title() }}</span>
+          {{ alert.message }}
+        </a>
+        {% else %}
+        <div class="list-group-item text-muted small">No open alerts for this beneficiary.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

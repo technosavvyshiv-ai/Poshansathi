@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if mode == 'edit' else 'Record' }} Intervention{% endblock %}
+
+{% macro field_error(errors, name) %}
+  {% if errors.get(name) %}
+    <div class="invalid-feedback d-block">{{ errors.get(name) }}</div>
+  {% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <div>
+    <h1 class="h3 mb-0">
+      <i class="bi bi-clipboard-check me-2"></i>
+      {{ 'Edit intervention' if mode == 'edit' else 'Record intervention' }}
+    </h1>
+    {% if visit %}
+    <p class="text-muted small mb-0">
+      Visit for {{ visit.beneficiary.full_name if visit.beneficiary else '—' }}
+      &middot; scheduled {{ visit.scheduled_date.strftime('%d %b %Y') }}
+    </p>
+    {% endif %}
+  </div>
+  <a class="btn btn-outline-secondary btn-sm"
+     href="{{ url_for('visits.detail', visit_id=visit.id) if visit else url_for('visits.index') }}">
+    <i class="bi bi-arrow-left me-1"></i>Back
+  </a>
+</div>
+
+<form method="post" novalidate
+      action="{{ url_for('visits.intervention_edit', intervention_id=intervention.id) if mode == 'edit' and intervention
+                else url_for('visits.intervention_create', visit_id=visit.id) }}">
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white fw-semibold">Intervention / follow-up</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="intervention_type" class="form-label">Type <span class="text-danger">*</span></label>
+              <input type="text" class="form-control {{ 'is-invalid' if errors.get('intervention_type') }}"
+                     id="intervention_type" name="intervention_type" list="intervention-types"
+                     value="{{ form.get('intervention_type', '') }}" maxlength="100" required>
+              <datalist id="intervention-types">
+                {% for value in intervention_types %}
+                <option value="{{ value }}"></option>
+                {% endfor %}
+              </datalist>
+              {{ field_error(errors, 'intervention_type') }}
+            </div>
+            <div class="col-md-6">
+              <label for="intervention_date" class="form-label">Date <span class="text-danger">*</span></label>
+              <input type="date" class="form-control {{ 'is-invalid' if errors.get('intervention_date') }}"
+                     id="intervention_date" name="intervention_date"
+                     value="{{ form.get('intervention_date', '') }}" required>
+              {{ field_error(errors, 'intervention_date') }}
+            </div>
+            <div class="col-12">
+              <label for="description" class="form-label">Description</label>
+              <textarea class="form-control {{ 'is-invalid' if errors.get('description') }}"
+                        id="description" name="description" rows="2"
+                        maxlength="2000">{{ form.get('description', '') }}</textarea>
+              {{ field_error(errors, 'description') }}
+            </div>
+            <div class="col-12">
+              <label for="outcome" class="form-label">Outcome</label>
+              <textarea class="form-control {{ 'is-invalid' if errors.get('outcome') }}"
+                        id="outcome" name="outcome" rows="2"
+                        maxlength="2000">{{ form.get('outcome', '') }}</textarea>
+              {{ field_error(errors, 'outcome') }}
+            </div>
+            <div class="col-md-6">
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" id="follow_up_required"
+                       name="follow_up_required" value="on"
+                       {{ 'checked' if form.get('follow_up_required') }}>
+                <label class="form-check-label" for="follow_up_required">Follow-up required</label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label for="follow_up_date" class="form-label">Follow-up date</label>
+              <input type="date" class="form-control {{ 'is-invalid' if errors.get('follow_up_date') }}"
+                     id="follow_up_date" name="follow_up_date"
+                     value="{{ form.get('follow_up_date', '') }}">
+              {{ field_error(errors, 'follow_up_date') }}
+            </div>
+            <div class="col-12">
+              <label for="resolve_alert_id" class="form-label">Resolve a related alert (optional)</label>
+              <select class="form-select {{ 'is-invalid' if errors.get('resolve_alert_id') }}"
+                      id="resolve_alert_id" name="resolve_alert_id">
+                <option value="">Do not resolve an alert</option>
+                {% for alert in open_alerts %}
+                <option value="{{ alert.id }}" {{ 'selected' if form.get('resolve_alert_id') == alert.id|string }}>
+                  {{ alert.alert_type.value.replace('_', ' ').title() }} — {{ alert.message }}
+                </option>
+                {% endfor %}
+              </select>
+              {{ field_error(errors, 'resolve_alert_id') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm mb-3 border-info">
+        <div class="card-body">
+          <h2 class="h6"><i class="bi bi-info-circle me-1"></i>Resolution workflow</h2>
+          <p class="small text-muted mb-0">
+            Recording an intervention completes the follow-up. Selecting an
+            open alert here resolves it as part of the same action. A follow-up
+            date is required when follow-up is requested.
+          </p>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-success w-100">
+        <i class="bi bi-check2-circle me-1"></i>
+        {{ 'Save changes' if mode == 'edit' else 'Record intervention' }}
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}

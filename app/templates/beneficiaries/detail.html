@@ -229,18 +229,22 @@
           </div>
           <div class="col-6 col-md-3">
             <div class="small text-muted">Home visits</div>
-            <div class="h4 mb-0">{{ beneficiary.home_visits|length }}</div>
+            <a class="h4 mb-0 d-block text-decoration-none"
+               href="{{ url_for('visits.index', beneficiary=beneficiary.id) }}">
+              {{ beneficiary.home_visits|length }}
+            </a>
           </div>
           <div class="col-6 col-md-3">
             <div class="small text-muted">Open alerts</div>
-            <div class="h4 mb-0">
+            <a class="h4 mb-0 d-block text-decoration-none"
+               href="{{ url_for('alerts.index', beneficiary=beneficiary.id) }}">
               {{ beneficiary.alerts | selectattr('status.value', 'equalto', 'OPEN') | list | length }}
-            </div>
+            </a>
           </div>
         </div>
         <p class="text-muted small mb-0 mt-3">
           <i class="bi bi-info-circle me-1"></i>
-          Alerts, home visits and reports are added in later phases.
+          Reports are added in a later phase.
         </p>
       </div>
     </div>

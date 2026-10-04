@@ -21,22 +21,18 @@ resolved.  This is a documented, temporary integration point for Phase 9.
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 
 from app.extensions import db
 from app.models import (
-    Alert,
     AnganwadiCentre,
     Inventory,
     NutritionDistribution,
     NutritionItem,
 )
-from app.utils.constants import (
-    AlertSeverity,
-    AlertStatus,
-    AlertType,
-)
+from app.services import alert_service
+from app.utils.constants import AlertType
 from app.utils.validators import (
     ValidationError,
     validate_nutrition_distribution_fields,
@@ -292,62 +288,27 @@ def record_distribution(
 
 
 # ---------------------------------------------------------------------------
-# Low-stock alert synchronisation (scoped integration point for Phase 9)
+# Low-stock alert synchronisation (delegates to the centralized alert engine)
 # ---------------------------------------------------------------------------
 def _alert_marker(centre_id: int, item_id: int) -> str:
     return f"[inventory:{centre_id}:{item_id}]"
 
 
-def open_low_stock_alert(centre_id: int, item_id: int) -> Alert | None:
-    """Return the current open/in-progress low-stock alert, if any."""
-    marker = _alert_marker(centre_id, item_id) + " %"
-    return (
-        Alert.query.filter(
-            Alert.alert_type == AlertType.LOW_NUTRITION_STOCK,
-            Alert.status.in_([AlertStatus.OPEN, AlertStatus.IN_PROGRESS]),
-            Alert.message.like(marker),
-        )
-        .order_by(Alert.created_at.desc())
-        .first()
+def open_low_stock_alert(centre_id: int, item_id: int):
+    """Return the current active low-stock alert, if any.
+
+    Thin wrapper kept for backwards compatibility; the rule itself lives in
+    :mod:`app.services.alert_service`.
+    """
+    return alert_service.open_alert(
+        AlertType.LOW_NUTRITION_STOCK,
+        marker=_alert_marker(centre_id, item_id),
     )
 
 
-def _sync_low_stock_alert(inventory: Inventory, *, actor=None) -> Alert | None:
+def _sync_low_stock_alert(inventory: Inventory, *, actor=None):
     """Create, update or resolve the low-stock alert for an inventory row."""
-    existing = open_low_stock_alert(inventory.centre_id, inventory.item_id)
-
-    if is_low_stock(inventory):
-        available = inventory.available_quantity
-        severity = AlertSeverity.HIGH if available <= 0 else AlertSeverity.MEDIUM
-        message = (
-            f"{_alert_marker(inventory.centre_id, inventory.item_id)} "
-            f"Low stock: {inventory.item.name} at {inventory.centre.name} is "
-            f"{available} {inventory.unit} (configured minimum "
-            f"{inventory.minimum_stock})."
-        )
-        if existing is None:
-            alert = Alert(
-                alert_type=AlertType.LOW_NUTRITION_STOCK,
-                severity=severity,
-                message=message,
-                status=AlertStatus.OPEN,
-                assigned_to=actor,
-                created_by=actor,
-            )
-            db.session.add(alert)
-            return alert
-        existing.severity = severity
-        existing.message = message
-        return existing
-
-    if existing is not None:
-        existing.status = AlertStatus.RESOLVED
-        existing.resolved_at = datetime.utcnow()
-        existing.resolution_notes = (
-            f"Stock replenished to {inventory.available_quantity} "
-            f"{inventory.unit}."
-        )
-    return existing
+    return alert_service.sync_low_stock_alert(inventory, actor=actor)
 
 
 __all__ = [

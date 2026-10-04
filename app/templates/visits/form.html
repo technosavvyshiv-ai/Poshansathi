@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if mode == 'edit' else 'Schedule' }} Home Visit{% endblock %}
+
+{% macro field_error(errors, name) %}
+  {% if errors.get(name) %}
+    <div class="invalid-feedback d-block">{{ errors.get(name) }}</div>
+  {% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <h1 class="h3 mb-0">
+    <i class="bi bi-house-heart me-2"></i>
+    {{ 'Edit home visit' if mode == 'edit' else 'Schedule home visit' }}
+  </h1>
+  <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('visits.index') }}">
+    <i class="bi bi-arrow-left me-1"></i>Home visits
+  </a>
+</div>
+
+<form method="post" novalidate
+      action="{{ url_for('visits.edit', visit_id=visit.id) if mode == 'edit' else url_for('visits.create') }}">
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white fw-semibold">Visit details</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="beneficiary_id" class="form-label">Beneficiary <span class="text-danger">*</span></label>
+              <select class="form-select {{ 'is-invalid' if errors.get('beneficiary_id') }}"
+                      id="beneficiary_id" name="beneficiary_id" required>
+                <option value="">Select a beneficiary…</option>
+                {% for person in beneficiaries %}
+                <option value="{{ person.id }}" {{ 'selected' if form.get('beneficiary_id') == person.id|string }}>
+                  {{ person.full_name }} ({{ person.centre.name if person.centre else '—' }})
+                </option>
+                {% endfor %}
+              </select>
+              {{ field_error(errors, 'beneficiary_id') }}
+            </div>
+            <div class="col-md-6">
+              <label for="visit_type" class="form-label">Visit type <span class="text-danger">*</span></label>
+              <select class="form-select {{ 'is-invalid' if errors.get('visit_type') }}"
+                      id="visit_type" name="visit_type" required>
+                {% for value in ['ROUTINE','GROWTH','VACCINATION','MATERNAL','NUTRITION','FOLLOW_UP'] %}
+                <option value="{{ value }}" {{ 'selected' if form.get('visit_type') == value }}>{{ value.replace('_', ' ').title() }}</option>
+                {% endfor %}
+              </select>
+              {{ field_error(errors, 'visit_type') }}
+            </div>
+            <div class="col-md-6">
+              <label for="assigned_worker_id" class="form-label">Assigned worker</label>
+              <select class="form-select {{ 'is-invalid' if errors.get('assigned_worker_id') }}"
+                      id="assigned_worker_id" name="assigned_worker_id">
+                <option value="">Me / unassigned</option>
+                {% for person in workers %}
+                <option value="{{ person.id }}" {{ 'selected' if form.get('assigned_worker_id') == person.id|string }}>{{ person.full_name }}</option>
+                {% endfor %}
+              </select>
+              {{ field_error(errors, 'assigned_worker_id') }}
+            </div>
+            <div class="col-md-6">
+              <label for="scheduled_date" class="form-label">Scheduled date <span class="text-danger">*</span></label>
+              <input type="date" class="form-control {{ 'is-invalid' if errors.get('scheduled_date') }}"
+                     id="scheduled_date" name="scheduled_date"
+                     value="{{ form.get('scheduled_date', '') }}" required>
+              {{ field_error(errors, 'scheduled_date') }}
+            </div>
+            <div class="col-12">
+              <label for="visit_notes" class="form-label">Visit notes</label>
+              <textarea class="form-control {{ 'is-invalid' if errors.get('visit_notes') }}"
+                        id="visit_notes" name="visit_notes" rows="3"
+                        maxlength="2000">{{ form.get('visit_notes', '') }}</textarea>
+              {{ field_error(errors, 'visit_notes') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm mb-3 border-info">
+        <div class="card-body">
+          <h2 class="h6"><i class="bi bi-info-circle me-1"></i>Workflow</h2>
+          <p class="small text-muted mb-0">
+            Scheduled → Completed → Intervention recorded → Follow-up required
+            or resolved. A scheduled visit that passes its date raises a
+            deterministic <strong>home visit pending</strong> alert.
+          </p>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-success w-100">
+        <i class="bi bi-check2-circle me-1"></i>
+        {{ 'Save changes' if mode == 'edit' else 'Schedule visit' }}
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}

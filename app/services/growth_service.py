@@ -16,13 +16,12 @@ measurement can raise or clear a follow-up flag.
 
 from __future__ import annotations
 
-from datetime import datetime
-
 from flask import abort, current_app
 
 from app.extensions import db
-from app.models import Alert, GrowthRecord
-from app.utils.constants import AlertSeverity, AlertStatus, AlertType
+from app.models import GrowthRecord
+from app.services import alert_service
+from app.utils.constants import AlertType
 from app.utils.growth_rules import (
     DEFAULT_RULES,
     DEMO_RULE_ID,
@@ -217,59 +216,18 @@ def _apply_classification(child, cleaned: dict) -> GrowthRecord:
 # ---------------------------------------------------------------------------
 # Growth alert synchronisation (scoped integration point for Phase 9)
 # ---------------------------------------------------------------------------
-def open_growth_alert(child) -> Alert | None:
-    """Return the current open/in-progress growth alert for ``child``."""
-    return (
-        Alert.query.filter_by(
-            child_id=child.id, alert_type=AlertType.GROWTH_FOLLOW_UP
-        )
-        .filter(Alert.status.in_([AlertStatus.OPEN, AlertStatus.IN_PROGRESS]))
-        .order_by(Alert.created_at.desc())
-        .first()
-    )
+def open_growth_alert(child):
+    """Return the current active growth alert for ``child``, if any.
+
+    Thin wrapper kept for backwards compatibility; the rule itself lives in
+    :mod:`app.services.alert_service`.
+    """
+    return alert_service.open_alert(AlertType.GROWTH_FOLLOW_UP, child=child)
 
 
-def _sync_growth_alert(child, record: GrowthRecord, *, actor=None) -> Alert | None:
+def _sync_growth_alert(child, record: GrowthRecord, *, actor=None):
     """Create or clear the growth follow-up alert for a measurement."""
-    status = record.nutritional_status
-    existing = open_growth_alert(child)
-
-    if is_concerning(status):
-        severity = (
-            AlertSeverity.HIGH
-            if status.value == "SEVERE_UNDERWEIGHT"
-            else AlertSeverity.MEDIUM
-        )
-        message = (
-            f"Growth follow-up: {child.beneficiary.full_name} classified "
-            f"{status.value} on {record.measurement_date.isoformat()} "
-            f"(demo rule)."
-        )
-        if existing is None:
-            alert = Alert(
-                beneficiary=child.beneficiary,
-                child=child,
-                alert_type=AlertType.GROWTH_FOLLOW_UP,
-                severity=severity,
-                message=message,
-                status=AlertStatus.OPEN,
-                assigned_to=actor,
-                created_by=actor,
-            )
-            db.session.add(alert)
-            return alert
-        existing.severity = severity
-        existing.message = message
-        return existing
-
-    if existing is not None:
-        existing.status = AlertStatus.RESOLVED
-        existing.resolved_at = datetime.utcnow()
-        existing.resolution_notes = (
-            f"Growth status {status.value} on "
-            f"{record.measurement_date.isoformat()} (demo rule)."
-        )
-    return existing
+    return alert_service.sync_growth_alert(child, record, actor=actor)
 
 
 __all__ = [

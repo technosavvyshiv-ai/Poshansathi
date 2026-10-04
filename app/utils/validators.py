@@ -22,6 +22,7 @@ from app.utils.constants import (
     Gender,
     RiskLevel,
     VaccinationStatus,
+    VisitType,
 )
 
 #: Blood groups accepted for child/mother profiles (demo data only).
@@ -717,6 +718,125 @@ def validate_attendance_fields(form, child):
     return cleaned, errors
 
 
+# ---------------------------------------------------------------------------
+# Home visit / intervention validation (Phase 9)
+# ---------------------------------------------------------------------------
+def validate_home_visit_fields(form):
+    """Validate a home-visit scheduling/edit form.
+
+    ``scheduled_date`` is required and may be in the future (that is the normal
+    case for a scheduled visit).  Beneficiary and worker existence/access are
+    resolved by the route before the service runs.
+    """
+    errors: dict[str, str] = {}
+    cleaned = {
+        "beneficiary_id": _parse_int(
+            form, "beneficiary_id", errors, minimum=1, label="Beneficiary"
+        ),
+        "visit_type": _parse_enum(
+            form,
+            "visit_type",
+            VisitType,
+            errors,
+            required=True,
+            default=VisitType.ROUTINE,
+        ),
+        "assigned_worker_id": _parse_int(
+            form, "assigned_worker_id", errors, minimum=1, label="Assigned worker"
+        ),
+        "scheduled_date": _parse_date(
+            form, "scheduled_date", errors, required=True, label="Scheduled date"
+        ),
+        "visit_notes": _parse_str(
+            form, "visit_notes", errors, max_len=2000, label="Visit notes"
+        ),
+    }
+
+    if cleaned["beneficiary_id"] is None and "beneficiary_id" not in errors:
+        errors["beneficiary_id"] = "Please select a beneficiary."
+
+    return cleaned, errors
+
+
+def validate_visit_completion_fields(form):
+    """Validate the fields submitted when completing a home visit."""
+    errors: dict[str, str] = {}
+    cleaned = {
+        "completed_date": _parse_date(
+            form,
+            "completed_date",
+            errors,
+            required=True,
+            not_future=True,
+            label="Completion date",
+        ),
+        "visit_notes": _parse_str(
+            form, "visit_notes", errors, max_len=2000, label="Visit notes"
+        ),
+    }
+    return cleaned, errors
+
+
+def validate_intervention_fields(form):
+    """Validate an intervention / follow-up record.
+
+    Follow-up consistency (project-defined):
+
+    * ``intervention_type`` and ``intervention_date`` are required;
+    * the intervention date cannot be in the future;
+    * a follow-up date is required when follow-up is requested and may not be
+      before the intervention date;
+    * ``resolve_alert_id`` is optional and, when supplied, must reference an
+      active alert of the same beneficiary (checked by the service).
+    """
+    errors: dict[str, str] = {}
+    cleaned = {
+        "intervention_type": _parse_str(
+            form, "intervention_type", errors, required=True, max_len=100,
+            label="Intervention type",
+        ),
+        "description": _parse_str(
+            form, "description", errors, max_len=2000, label="Description"
+        ),
+        "outcome": _parse_str(
+            form, "outcome", errors, max_len=2000, label="Outcome"
+        ),
+        "intervention_date": _parse_date(
+            form,
+            "intervention_date",
+            errors,
+            required=True,
+            not_future=True,
+            label="Intervention date",
+        ),
+        "follow_up_date": _parse_date(
+            form, "follow_up_date", errors, label="Follow-up date"
+        ),
+        "follow_up_required": _get(form, "follow_up_required")
+        not in ("", "0", "false", "off", "False"),
+        "resolve_alert_id": _parse_int(
+            form, "resolve_alert_id", errors, minimum=1, label="Alert"
+        ),
+    }
+
+    intervention_date = cleaned.get("intervention_date")
+    follow_up = cleaned.get("follow_up_date")
+    if (
+        cleaned["follow_up_required"]
+        and follow_up is None
+        and "follow_up_date" not in errors
+    ):
+        errors["follow_up_date"] = (
+            "Follow-up date is required when follow-up is requested."
+        )
+    if follow_up and intervention_date and follow_up < intervention_date:
+        errors["follow_up_date"] = (
+            "Follow-up date cannot be before the intervention date."
+        )
+
+    return cleaned, errors
+
+
 __all__ = [
     "BLOOD_GROUPS",
     "MAX_CHILD_AGE_YEARS",
@@ -724,6 +844,8 @@ __all__ = [
     "validate_attendance_fields",
     "validate_beneficiary_fields",
     "validate_child_fields",
+    "validate_home_visit_fields",
+    "validate_intervention_fields",
     "validate_maternal_health_fields",
     "validate_mother_fields",
     "validate_centre_fields",
@@ -732,4 +854,5 @@ __all__ = [
     "validate_nutrition_item_fields",
     "validate_stock_received_fields",
     "validate_vaccination_fields",
+    "validate_visit_completion_fields",
 ]

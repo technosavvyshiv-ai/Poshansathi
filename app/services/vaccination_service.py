@@ -22,6 +22,7 @@ from sqlalchemy import func
 
 from app.extensions import db
 from app.models import Vaccination
+from app.services import alert_service
 from app.utils.constants import VaccinationStatus
 from app.utils.validators import ValidationError, validate_vaccination_fields
 from app.utils.vaccination_rules import (
@@ -154,6 +155,7 @@ def create_vaccination(child, form, *, recorded_by=None) -> Vaccination:
     record = Vaccination(child=child)
     _apply_record(record, cleaned, recorded_by=recorded_by)
     db.session.add(record)
+    alert_service.sync_vaccination_alert(child, actor=recorded_by)
     db.session.commit()
     return record
 
@@ -184,6 +186,7 @@ def update_vaccination(
         )
 
     _apply_record(record, cleaned, recorded_by=recorded_by)
+    alert_service.sync_vaccination_alert(child, actor=recorded_by)
     db.session.commit()
     return record
 

@@ -22,6 +22,7 @@ from flask import abort
 
 from app.extensions import db
 from app.models import Attendance, Beneficiary, Child
+from app.services import alert_service
 from app.utils.constants import AttendanceStatus, RecordStatus
 from app.utils.validators import ValidationError, validate_attendance_fields
 
@@ -328,12 +329,14 @@ def record_attendance(
                 }
             )
         _apply(existing, child, cleaned, recorded_by)
+        alert_service.sync_attendance_alert(child, actor=recorded_by)
         db.session.commit()
         return existing
 
     record = Attendance()
     _apply(record, child, cleaned, recorded_by)
     db.session.add(record)
+    alert_service.sync_attendance_alert(child, actor=recorded_by)
     db.session.commit()
     return record
 
@@ -361,6 +364,7 @@ def update_attendance(child, record: Attendance, form, *, recorded_by=None) -> A
         )
 
     _apply(record, child, cleaned, recorded_by)
+    alert_service.sync_attendance_alert(child, actor=recorded_by)
     db.session.commit()
     return record
 
@@ -381,6 +385,7 @@ def mark_daily_attendance(centre, on_date, entries, *, recorded_by=None) -> dict
     }
 
     created = updated = skipped = invalid = 0
+    affected: dict[int, object] = {}
     for entry in entries:
         child = entry["child"]
         status_raw = (entry.get("status_raw") or "").strip()
@@ -413,6 +418,10 @@ def mark_daily_attendance(centre, on_date, entries, *, recorded_by=None) -> dict
         record.note = note
         if recorded_by is not None:
             record.recorded_by = recorded_by
+        affected[child.id] = child
+
+    for child in affected.values():
+        alert_service.sync_attendance_alert(child, actor=recorded_by)
 
     db.session.commit()
     return {

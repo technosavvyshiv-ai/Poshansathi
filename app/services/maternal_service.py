@@ -21,6 +21,7 @@ from flask import abort
 
 from app.extensions import db
 from app.models import MaternalHealthRecord
+from app.services import alert_service
 from app.utils.maternal_rules import (
     FollowUpStatus,
     follow_up_badge,
@@ -194,6 +195,7 @@ def create_maternal_health(mother, form, *, recorded_by=None) -> MaternalHealthR
     record = MaternalHealthRecord(mother=mother)
     _apply_record(record, cleaned, recorded_by=recorded_by)
     db.session.add(record)
+    alert_service.sync_maternal_alert(mother, actor=recorded_by)
     db.session.commit()
     return record
 
@@ -219,6 +221,7 @@ def update_maternal_health(
         )
 
     _apply_record(record, cleaned, recorded_by=recorded_by)
+    alert_service.sync_maternal_alert(mother, actor=recorded_by)
     db.session.commit()
     return record
 

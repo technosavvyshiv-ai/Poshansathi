@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% block title %}Alert #{{ alert.id }}{% endblock %}
+
+{% set status_badges = {
+  'OPEN': 'text-bg-danger',
+  'IN_PROGRESS': 'text-bg-warning',
+  'RESOLVED': 'text-bg-success',
+  'DISMISSED': 'text-bg-secondary'
+} %}
+{% set severity_badges = {
+  'LOW': 'text-bg-secondary',
+  'MEDIUM': 'text-bg-info',
+  'HIGH': 'text-bg-warning',
+  'CRITICAL': 'text-bg-danger'
+} %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
+  <div>
+    <h1 class="h3 mb-1">
+      <i class="bi bi-exclamation-triangle me-2"></i>{{ rule_labels.get(alert.alert_type, alert.alert_type.value) }}
+      <span class="badge {{ status_badges.get(alert.status.value, 'text-bg-secondary') }} align-middle">{{ alert.status.value.replace('_', ' ').title() }}</span>
+      <span class="badge {{ severity_badges.get(alert.severity.value, 'text-bg-secondary') }} align-middle">{{ alert.severity.value.title() }}</span>
+    </h1>
+    <p class="text-muted small mb-0">
+      Alert #{{ alert.id }} &middot; raised {{ alert.created_at.strftime('%d %b %Y %H:%M') }}
+      {% if alert.created_by %} by {{ alert.created_by.full_name }}{% endif %}
+    </p>
+  </div>
+  <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('alerts.index') }}">
+    <i class="bi bi-arrow-left me-1"></i>All alerts
+  </a>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header bg-white fw-semibold">Alert</div>
+      <div class="card-body">
+        <p class="mb-3">{{ alert.message }}</p>
+        <dl class="row mb-0 small">
+          <dt class="col-4">Type</dt>
+          <dd class="col-8">{{ rule_labels.get(alert.alert_type, alert.alert_type.value) }}</dd>
+          <dt class="col-4">Beneficiary</dt>
+          <dd class="col-8">
+            {% if beneficiary %}
+            <a href="{{ url_for('beneficiaries.detail', beneficiary_id=beneficiary.id) }}">{{ beneficiary.full_name }}</a>
+            {% else %}<span class="text-muted">Nutrition stock (no beneficiary)</span>{% endif %}
+          </dd>
+          {% if child %}
+          <dt class="col-4">Child</dt>
+          <dd class="col-8">
+            <a href="{{ url_for('beneficiaries.detail', beneficiary_id=child.beneficiary_id) }}">Child profile</a>
+          </dd>
+          {% endif %}
+          <dt class="col-4">Assigned to</dt>
+          <dd class="col-8">{{ alert.assigned_to.full_name if alert.assigned_to else 'Unassigned' }}</dd>
+          <dt class="col-4">Resolved at</dt>
+          <dd class="col-8">{{ alert.resolved_at.strftime('%d %b %Y %H:%M') if alert.resolved_at else '—' }}</dd>
+          <dt class="col-4">Resolution notes</dt>
+          <dd class="col-8">{{ alert.resolution_notes or '—' }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    {% if beneficiary %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-house-heart me-1"></i>Home visits</span>
+        {% if can_manage %}
+        <a class="btn btn-sm btn-outline-success" href="{{ url_for('visits.create', beneficiary=beneficiary.id) }}">
+          <i class="bi bi-plus-circle me-1"></i>Schedule visit
+        </a>
+        {% endif %}
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr><th>Scheduled</th><th>Type</th><th>Worker</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for visit in visits %}
+            <tr>
+              <td class="small">{{ visit.scheduled_date.strftime('%d %b %Y') }}</td>
+              <td class="small">{{ visit.visit_type.value.replace('_', ' ').title() }}</td>
+              <td class="small">{{ visit.assigned_worker.full_name if visit.assigned_worker else '—' }}</td>
+              <td class="small">{{ visit.status.value.replace('_', ' ').title() }}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('visits.detail', visit_id=visit.id) }}">Open</a>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center text-muted py-3">No home visits recorded.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-clipboard-check me-1"></i>Interventions</div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr><th>Date</th><th>Type</th><th>Outcome</th><th>Follow-up</th></tr>
+          </thead>
+          <tbody>
+            {% for item in interventions %}
+            <tr>
+              <td class="small">{{ item.intervention_date.strftime('%d %b %Y') }}</td>
+              <td class="small">{{ item.intervention_type }}</td>
+              <td class="small text-muted">{{ item.outcome or '—' }}</td>
+              <td class="small">{{ item.follow_up_date.strftime('%d %b %Y') if item.follow_up_date else '—' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-3">No interventions recorded.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-5">
+    {% if can_manage %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-person-check me-1"></i>Assignment</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('alerts.assign', alert_id=alert.id) }}" class="d-flex gap-2">
+          <select class="form-select form-select-sm" name="assigned_to_id" required>
+            <option value="">Select a user…</option>
+            {% for person in assignees %}
+            <option value="{{ person.id }}" {{ 'selected' if alert.assigned_to_id == person.id }}>{{ person.full_name }} ({{ role_labels.get(person.role, person.role.value) }})</option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-outline-primary btn-sm" type="submit">Assign</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-arrow-left-right me-1"></i>Status</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('alerts.update_status', alert_id=alert.id) }}">
+          <div class="mb-2">
+            <label class="form-label small mb-1">New status</label>
+            <select class="form-select form-select-sm" name="status" required>
+              <option value="{{ alert.status.value }}">{{ alert.status.value.replace('_', ' ').title() }} (current)</option>
+              {% for status in allowed_statuses %}
+              <option value="{{ status.value }}">{{ status.value.replace('_', ' ').title() }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small mb-1">Notes (resolution / dismissal)</label>
+            <textarea class="form-control form-control-sm" name="resolution_notes" rows="2" maxlength="1000">{{ alert.resolution_notes or '' }}</textarea>
+          </div>
+          <button class="btn btn-outline-primary btn-sm w-100" type="submit">Update status</button>
+        </form>
+
+        <div class="d-flex gap-2 mt-3">
+          {% if alert.status.value in ['OPEN', 'IN_PROGRESS'] %}
+          <form method="post" action="{{ url_for('alerts.resolve', alert_id=alert.id) }}" class="flex-fill">
+            <button class="btn btn-success btn-sm w-100" type="submit"><i class="bi bi-check2-circle me-1"></i>Resolve</button>
+          </form>
+          <form method="post" action="{{ url_for('alerts.dismiss', alert_id=alert.id) }}" class="flex-fill">
+            <button class="btn btn-outline-secondary btn-sm w-100" type="submit"><i class="bi bi-slash-circle me-1"></i>Dismiss</button>
+          </form>
+          {% else %}
+          <form method="post" action="{{ url_for('alerts.reopen', alert_id=alert.id) }}" class="flex-fill">
+            <button class="btn btn-warning btn-sm w-100" type="submit"><i class="bi bi-arrow-counterclockwise me-1"></i>Reopen</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card shadow-sm border-info">
+      <div class="card-body">
+        <h2 class="h6"><i class="bi bi-info-circle me-1"></i>Deterministic rule</h2>
+        <p class="small text-muted mb-0">
+          Alerts are produced by explicit, versioned project rules over stored
+          records. No AI or external clinical reference is used to decide
+          whether an alert should exist.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

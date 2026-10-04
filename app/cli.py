@@ -61,9 +61,24 @@ def seed_db_command(force: bool) -> None:
     click.echo(result.summary())
 
 
+@click.command("scan-alerts")
+@with_appcontext
+def scan_alerts_command() -> None:
+    """Run the deterministic alert rules across all stored data."""
+    from app.services import alert_service
+
+    result = alert_service.evaluate_all()
+    click.echo(
+        "Alert scan complete: evaluated "
+        f"{result['beneficiaries']} beneficiaries; "
+        f"{result['active_alerts']} active alert(s)."
+    )
+
+
 def register_cli(app: Flask) -> None:
     """Attach the database CLI commands to ``app``."""
     app.cli.add_command(init_db_command)
     app.cli.add_command(drop_db_command)
     app.cli.add_command(reset_db_command)
     app.cli.add_command(seed_db_command)
+    app.cli.add_command(scan_alerts_command)
