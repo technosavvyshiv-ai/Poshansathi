@@ -1,0 +1,58 @@
+name,category,serving_desc,serving_grams,calories,protein_g,carbs_g,fat_g,fiber_g,iron_mg,calcium_mg,vitamin_c_mg,is_veg
+Roti (Chapati),Cereal,"1 medium",40,104,3.1,20.0,1.2,2.0,0.9,15,0,1
+Paratha,Cereal,"1 medium",60,210,4.5,28.0,9.0,3.0,1.2,20,0,1
+Plain Rice (cooked),Cereal,"1 cup",158,205,4.3,45.0,0.4,0.6,0.3,16,0,1
+Jeera Rice,Cereal,"1 cup",180,250,5.0,46.0,6.0,1.0,0.4,20,0,1
+Biryani (veg),Cereal,"1 cup",200,350,12.0,45.0,14.0,2.0,2.0,40,4,1
+Idli,Cereal,"2 pieces",80,116,4.0,24.0,0.4,1.0,1.5,12,0,1
+Dosa (plain),Cereal,"1 medium",80,133,3.0,25.0,2.5,1.0,0.6,10,0,1
+Poha,Cereal,"1 cup",150,250,5.0,42.0,8.0,2.0,1.2,25,8,1
+Upma,Cereal,"1 cup",155,250,6.0,38.0,9.0,3.0,1.0,30,6,1
+Puri,Cereal,"2 pieces",60,300,6.0,36.0,15.0,2.0,1.0,15,0,1
+Naan,Cereal,"1 piece",90,260,8.0,48.0,5.0,2.0,1.0,30,0,1
+Bread (white),Cereal,"1 slice",28,70,2.5,13.0,1.0,0.7,0.8,30,0,1
+Oats (dry),Cereal,"1/2 cup",40,150,5.0,27.0,3.0,4.0,1.7,20,0,1
+Dal Tadka,Dal,"1 cup",200,230,12.0,30.0,7.0,8.0,3.5,40,2,1
+Dal Makhani,Dal,"1 cup",200,350,14.0,35.0,16.0,9.0,4.0,80,2,1
+Rajma (kidney beans),Dal,"1 cup",180,260,15.0,40.0,4.0,12.0,5.0,80,2,1
+Chole (chickpeas),Dal,"1 cup",180,270,14.0,42.0,6.0,12.0,5.0,80,2,1
+Sambar,Dal,"1 cup",200,150,7.0,20.0,5.0,5.0,2.0,40,10,1
+Rasam,Dal,"1 cup",200,60,3.0,8.0,2.0,2.0,1.0,20,8,1
+Mixed Veg Sabzi,Vegetable,"1 cup",150,150,4.0,15.0,8.0,5.0,2.0,50,20,1
+Palak Paneer,Vegetable,"1 cup",200,280,12.0,12.0,20.0,4.0,3.0,270,15,1
+Aloo Gobi,Vegetable,"1 cup",160,180,4.0,20.0,9.0,5.0,1.5,35,25,1
+Bhindi Masala,Vegetable,"1 cup",150,160,3.0,14.0,10.0,5.0,1.5,80,18,1
+Baingan Bharta,Vegetable,"1 cup",180,170,4.0,15.0,11.0,6.0,2.0,30,12,1
+Cucumber Salad,Vegetable,"1 cup",120,30,1.0,6.0,0.2,1.5,0.5,20,5,1
+Green Salad,Vegetable,"1 cup",100,45,2.0,8.0,0.5,3.0,1.0,35,25,1
+Paneer,Protein,"100 g",100,265,18.0,3.0,21.0,0.0,0.2,208,0,1
+Boiled Egg,Protein,"2 eggs",100,155,13.0,1.0,11.0,0.0,1.2,50,0,0
+Chicken Curry,Protein,"1 cup",200,320,25.0,8.0,21.0,1.0,2.0,30,5,0
+Fish Curry,Protein,"1 cup",200,250,22.0,7.0,15.0,1.0,1.5,80,3,0
+Tandoori Chicken,Protein,"100 g",100,165,27.0,2.0,5.0,0.0,1.0,20,0,0
+Soya Chunks (cooked),Protein,"1 cup",150,220,26.0,18.0,2.0,6.0,5.0,100,0,1
+Tofu,Protein,"100 g",100,144,16.0,3.0,9.0,1.0,2.7,350,0,1
+Whey Protein,Protein,"1 scoop",30,120,24.0,3.0,1.5,0.0,0.5,60,0,1
+Toned Milk,Dairy,"1 cup",240,120,6.0,9.0,6.0,0.0,0.1,290,2,1
+Curd (Dahi),Dairy,"1 cup",200,100,5.0,7.0,5.0,0.0,0.1,190,2,1
+Sweet Lassi,Dairy,"1 cup",240,180,6.0,25.0,6.0,0.0,0.2,220,2,1
+Buttermilk (Chaas),Dairy,"1 cup",240,60,3.0,6.0,2.5,0.0,0.1,120,2,1
+Ghee,Dairy,"1 tsp",5,45,0.0,0.0,5.0,0.0,0.0,0,0,1
+Apple,Fruit,"1 medium",180,95,0.5,25.0,0.3,4.4,0.2,10,8,1
+Banana,Fruit,"1 medium",118,105,1.3,27.0,0.4,3.1,0.3,6,10,1
+Mango,Fruit,"1 cup",165,100,1.4,25.0,0.6,2.6,0.2,18,46,1
+Orange,Fruit,"1 medium",130,62,1.2,15.0,0.2,3.1,0.1,52,70,1
+Papaya,Fruit,"1 cup",145,62,0.7,16.0,0.4,2.5,0.1,30,88,1
+Guava,Fruit,"1 medium",100,68,2.6,14.0,1.0,5.4,0.3,18,228,1
+Pomegranate,Fruit,"1 cup",175,144,3.0,33.0,2.0,7.0,0.5,18,18,1
+Almonds,Nut,"10 pieces",12,70,2.6,2.5,6.0,1.5,0.4,30,0,1
+Peanuts,Nut,"1/4 cup",35,200,9.0,6.0,16.0,3.0,1.3,30,0,1
+Samosa,Snack,"1 piece",60,260,4.0,30.0,14.0,2.0,1.5,20,5,1
+Vada Pav,Snack,"1 piece",150,290,7.0,40.0,11.0,3.0,2.0,40,10,1
+Pakora,Snack,"4 pieces",80,300,6.0,28.0,18.0,3.0,1.5,60,5,1
+Fruit Chaat,Snack,"1 cup",180,200,2.0,48.0,0.5,6.0,1.0,40,60,1
+Khakhra,Snack,"2 pieces",30,90,3.0,16.0,1.0,3.0,1.0,15,0,1
+Chai with Sugar,Beverage,"1 cup",150,105,2.0,16.0,3.5,0.0,0.2,50,0,1
+Black Coffee,Beverage,"1 cup",240,5,0.3,0.5,0.0,0.0,0.1,5,0,1
+Coconut Water,Beverage,"1 cup",240,46,1.7,9.0,0.5,2.6,0.3,60,4,1
+Lemon Water,Beverage,"1 glass",250,20,0.2,5.0,0.0,0.2,0.1,10,10,1
