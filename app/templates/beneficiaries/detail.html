@@ -128,6 +128,12 @@
               View attendance history
             </a>
           </dd>
+          <dt class="col-5">Schemes</dt>
+          <dd class="col-7">
+            <a href="{{ url_for('schemes.beneficiary_schemes', beneficiary_id=beneficiary.id) }}">
+              View scheme history &amp; recommendations
+            </a>
+          </dd>
         </dl>
       </div>
     </div>
@@ -172,6 +178,12 @@
           <dd class="col-7">
             <a href="{{ url_for('nutrition.beneficiary_history', beneficiary_id=beneficiary.id) }}">
               View nutrition distribution history
+            </a>
+          </dd>
+          <dt class="col-5">Schemes</dt>
+          <dd class="col-7">
+            <a href="{{ url_for('schemes.beneficiary_schemes', beneficiary_id=beneficiary.id) }}">
+              View scheme history &amp; recommendations
             </a>
           </dd>
         </dl>
@@ -239,6 +251,13 @@
             <a class="h4 mb-0 d-block text-decoration-none"
                href="{{ url_for('alerts.index', beneficiary=beneficiary.id) }}">
               {{ beneficiary.alerts | selectattr('status.value', 'equalto', 'OPEN') | list | length }}
+            </a>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="small text-muted">Schemes</div>
+            <a class="h4 mb-0 d-block text-decoration-none"
+               href="{{ url_for('schemes.beneficiary_schemes', beneficiary_id=beneficiary.id) }}">
+              {{ beneficiary.scheme_links|length }}
             </a>
           </div>
         </div>

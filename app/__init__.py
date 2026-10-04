@@ -113,6 +113,7 @@ def _register_blueprints(app: Flask) -> None:
     from app.routes.main import bp as main_bp
     from app.routes.maternal import bp as maternal_bp
     from app.routes.nutrition import bp as nutrition_bp
+    from app.routes.schemes import bp as schemes_bp
     from app.routes.vaccination import bp as vaccination_bp
     from app.routes.visits import bp as visits_bp
 
@@ -127,6 +128,7 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(attendance_bp)
     app.register_blueprint(alerts_bp)
     app.register_blueprint(visits_bp)
+    app.register_blueprint(schemes_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(main_bp)
 

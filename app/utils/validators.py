@@ -21,6 +21,7 @@ from app.utils.constants import (
     BeneficiaryType,
     Gender,
     RiskLevel,
+    SchemeStatus,
     VaccinationStatus,
     VisitType,
 )
@@ -837,12 +838,87 @@ def validate_intervention_fields(form):
     return cleaned, errors
 
 
+# ---------------------------------------------------------------------------
+# Welfare scheme validation (Phase 10)
+# ---------------------------------------------------------------------------
+def validate_scheme_fields(form):
+    """Validate a welfare-scheme catalogue entry (ADMIN managed)."""
+    errors: dict[str, str] = {}
+    cleaned = {
+        "name": _parse_str(
+            form, "name", errors, required=True, max_len=200, label="Scheme name"
+        ),
+        "category": _parse_str(
+            form, "category", errors, max_len=80, label="Category"
+        ),
+        "description": _parse_str(
+            form, "description", errors, max_len=2000, label="Description"
+        ),
+        "target_group": _parse_str(
+            form, "target_group", errors, max_len=150, label="Target group"
+        ),
+        "benefits": _parse_str(
+            form, "benefits", errors, max_len=2000, label="Benefits"
+        ),
+        "eligibility": _parse_str(
+            form, "eligibility", errors, max_len=2000, label="Eligibility information"
+        ),
+        "required_documents": _parse_str(
+            form,
+            "required_documents",
+            errors,
+            max_len=2000,
+            label="Required documents",
+        ),
+        "application_info": _parse_str(
+            form, "application_info", errors, max_len=2000, label="Application information"
+        ),
+        "is_active": _get(form, "is_active")
+        not in ("", "0", "false", "off", "False"),
+    }
+    return cleaned, errors
+
+
+def validate_beneficiary_scheme_fields(form):
+    """Validate a beneficiary <-> scheme association.
+
+    ``scheme_id`` and ``status`` are required.  The status is a
+    project-recorded value (see :class:`app.utils.constants.SchemeStatus`), not
+    an official eligibility decision.  ``applied_date`` is optional and cannot
+    be in the future.
+    """
+    errors: dict[str, str] = {}
+    cleaned = {
+        "scheme_id": _parse_int(
+            form, "scheme_id", errors, minimum=1, label="Scheme"
+        ),
+        "status": _parse_enum(
+            form,
+            "status",
+            SchemeStatus,
+            errors,
+            required=True,
+            default=SchemeStatus.ELIGIBLE,
+        ),
+        "applied_date": _parse_date(
+            form, "applied_date", errors, not_future=True, label="Applied date"
+        ),
+        "notes": _parse_str(form, "notes", errors, max_len=1000, label="Notes"),
+    }
+
+    if cleaned["scheme_id"] is None and "scheme_id" not in errors:
+        errors["scheme_id"] = "Please select a scheme."
+
+    return cleaned, errors
+
+
 __all__ = [
     "BLOOD_GROUPS",
     "MAX_CHILD_AGE_YEARS",
     "ValidationError",
     "validate_attendance_fields",
     "validate_beneficiary_fields",
+    "validate_beneficiary_scheme_fields",
     "validate_child_fields",
     "validate_home_visit_fields",
     "validate_intervention_fields",
@@ -852,6 +928,7 @@ __all__ = [
     "validate_growth_fields",
     "validate_nutrition_distribution_fields",
     "validate_nutrition_item_fields",
+    "validate_scheme_fields",
     "validate_stock_received_fields",
     "validate_vaccination_fields",
     "validate_visit_completion_fields",

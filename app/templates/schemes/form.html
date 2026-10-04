@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if mode == 'edit' else 'New' }} Scheme{% endblock %}
+
+{% macro field_error(errors, name) %}
+  {% if errors.get(name) %}
+    <div class="invalid-feedback d-block">{{ errors.get(name) }}</div>
+  {% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <h1 class="h3 mb-0">
+    <i class="bi bi-award me-2"></i>
+    {{ 'Edit scheme' if mode == 'edit' else 'New welfare scheme' }}
+  </h1>
+  <a class="btn btn-outline-secondary btn-sm"
+     href="{{ url_for('schemes.detail', scheme_id=scheme.id) if mode == 'edit' else url_for('schemes.index') }}">
+    <i class="bi bi-arrow-left me-1"></i>Back
+  </a>
+</div>
+
+<form method="post" novalidate
+      action="{{ url_for('schemes.edit', scheme_id=scheme.id) if mode == 'edit' else url_for('schemes.create') }}">
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white fw-semibold">Scheme details</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label for="name" class="form-label">Scheme name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control {{ 'is-invalid' if errors.get('name') }}"
+                     id="name" name="name" maxlength="200"
+                     value="{{ form.get('name', '') }}" required>
+              {{ field_error(errors, 'name') }}
+            </div>
+            <div class="col-md-4">
+              <label for="category" class="form-label">Category</label>
+              <input type="text" class="form-control {{ 'is-invalid' if errors.get('category') }}"
+                     id="category" name="category" maxlength="80"
+                     list="scheme-categories" value="{{ form.get('category', '') }}">
+              <datalist id="scheme-categories">
+                {% for item in ['Child Welfare','Maternity Benefit','Nutrition Mission','School Nutrition','Health'] %}
+                <option value="{{ item }}"></option>
+                {% endfor %}
+              </datalist>
+              {{ field_error(errors, 'category') }}
+            </div>
+            <div class="col-12">
+              <label for="target_group" class="form-label">Target group</label>
+              <input type="text" class="form-control {{ 'is-invalid' if errors.get('target_group') }}"
+                     id="target_group" name="target_group" maxlength="150"
+                     value="{{ form.get('target_group', '') }}">
+              {{ field_error(errors, 'target_group') }}
+            </div>
+            <div class="col-12">
+              <label for="description" class="form-label">Description</label>
+              <textarea class="form-control {{ 'is-invalid' if errors.get('description') }}"
+                        id="description" name="description" rows="2"
+                        maxlength="2000">{{ form.get('description', '') }}</textarea>
+              {{ field_error(errors, 'description') }}
+            </div>
+            <div class="col-12">
+              <label for="benefits" class="form-label">Benefits</label>
+              <textarea class="form-control {{ 'is-invalid' if errors.get('benefits') }}"
+                        id="benefits" name="benefits" rows="2"
+                        maxlength="2000">{{ form.get('benefits', '') }}</textarea>
+              {{ field_error(errors, 'benefits') }}
+            </div>
+            <div class="col-12">
+              <label for="eligibility" class="form-label">Eligibility information</label>
+              <textarea class="form-control {{ 'is-invalid' if errors.get('eligibility') }}"
+                        id="eligibility" name="eligibility" rows="2"
+                        maxlength="2000">{{ form.get('eligibility', '') }}</textarea>
+              {{ field_error(errors, 'eligibility') }}
+            </div>
+            <div class="col-12">
+              <label for="required_documents" class="form-label">Required documents</label>
+              <textarea class="form-control {{ 'is-invalid' if errors.get('required_documents') }}"
+                        id="required_documents" name="required_documents" rows="2"
+                        maxlength="2000">{{ form.get('required_documents', '') }}</textarea>
+              {{ field_error(errors, 'required_documents') }}
+            </div>
+            <div class="col-12">
+              <label for="application_info" class="form-label">Application information</label>
+              <textarea class="form-control {{ 'is-invalid' if errors.get('application_info') }}"
+                        id="application_info" name="application_info" rows="2"
+                        maxlength="2000">{{ form.get('application_info', '') }}</textarea>
+              {{ field_error(errors, 'application_info') }}
+            </div>
+            <div class="col-12">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="is_active" name="is_active"
+                       {{ 'checked' if form.get('is_active') }}>
+                <label class="form-check-label" for="is_active">Active (available in the catalogue)</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm mb-3 border-info">
+        <div class="card-body">
+          <h2 class="h6"><i class="bi bi-info-circle me-1"></i>Demo data only</h2>
+          <p class="small text-muted mb-0">
+            Store project-supplied scheme information. The system does not claim
+            official government eligibility; relevance is a project demo rule.
+          </p>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-success w-100">
+        <i class="bi bi-check2-circle me-1"></i>
+        {{ 'Save changes' if mode == 'edit' else 'Create scheme' }}
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}

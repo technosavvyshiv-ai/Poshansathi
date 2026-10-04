@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% block title %}Welfare Schemes{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
+  <div>
+    <h1 class="h3 mb-1"><i class="bi bi-award me-2"></i>Welfare schemes</h1>
+    <p class="text-muted small mb-0">
+      Scheme information and beneficiary associations. Relevance is shown as
+      <strong>potentially relevant</strong> only — never an official eligibility
+      determination.
+    </p>
+  </div>
+  {% if can_manage %}
+  <a class="btn btn-success btn-sm" href="{{ url_for('schemes.create') }}">
+    <i class="bi bi-plus-circle me-1"></i>New scheme
+  </a>
+  {% endif %}
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Active schemes</div>
+        <div class="h4 mb-0">{{ summary.scheme_count }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Categories</div>
+        <div class="h4 mb-0">{{ summary.category_count }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Beneficiary links</div>
+        <div class="h4 mb-0">{{ summary.status_counts.TOTAL }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Enrolled</div>
+        <div class="h4 mb-0 text-success">{{ summary.status_counts.ENROLLED }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+  <div class="card-body">
+    <form class="row g-2 align-items-end" method="get" action="{{ url_for('schemes.index') }}">
+      <div class="col-md-5">
+        <label class="form-label small mb-1">Search</label>
+        <input type="text" class="form-control form-control-sm" name="q" value="{{ search }}" placeholder="Scheme name or target group">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small mb-1">Category</label>
+        <select class="form-select form-select-sm" name="category">
+          <option value="">All categories</option>
+          {% for item in categories %}
+          <option value="{{ item }}" {{ 'selected' if category == item }}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-outline-primary btn-sm w-100" type="submit">
+          <i class="bi bi-funnel me-1"></i>Filter
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Scheme</th>
+          <th>Category</th>
+          <th>Target group</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for scheme in schemes %}
+        <tr>
+          <td class="small">
+            <a class="text-decoration-none fw-semibold" href="{{ url_for('schemes.detail', scheme_id=scheme.id) }}">{{ scheme.name }}</a>
+            {% if scheme.description %}<div class="text-muted">{{ scheme.description|truncate(120) }}</div>{% endif %}
+          </td>
+          <td class="small">{{ scheme.category or '—' }}</td>
+          <td class="small">{{ scheme.target_group or '—' }}</td>
+          <td><span class="badge text-bg-success">Active</span></td>
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('schemes.detail', scheme_id=scheme.id) }}" title="Open">
+              <i class="bi bi-box-arrow-up-right"></i>
+            </a>
+            {% if can_manage %}
+            <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('schemes.edit', scheme_id=scheme.id) }}" title="Edit">
+              <i class="bi bi-pencil"></i>
+            </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-5">
+            <i class="bi bi-award display-6 d-block mb-2"></i>
+            No schemes match the current filter.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %}{{ scheme.name }}{% endblock %}
+
+{% set status_badges = {
+  'ELIGIBLE': 'text-bg-info',
+  'APPLIED': 'text-bg-warning',
+  'ENROLLED': 'text-bg-success',
+  'REJECTED': 'text-bg-danger'
+} %}
+{% set status_labels = {
+  'ELIGIBLE': 'Recorded eligible',
+  'APPLIED': 'Applied',
+  'ENROLLED': 'Enrolled',
+  'REJECTED': 'Rejected'
+} %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
+  <div>
+    <h1 class="h3 mb-1">
+      <i class="bi bi-award me-2"></i>{{ scheme.name }}
+      {% if scheme.is_active %}
+        <span class="badge text-bg-success align-middle">Active</span>
+      {% else %}
+        <span class="badge text-bg-secondary align-middle">Inactive</span>
+      {% endif %}
+    </h1>
+    <p class="text-muted small mb-0">
+      {{ scheme.category or 'Uncategorised' }}
+      {% if scheme.target_group %} &middot; {{ scheme.target_group }}{% endif %}
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('schemes.index') }}">
+      <i class="bi bi-arrow-left me-1"></i>Catalogue
+    </a>
+    {% if can_manage %}
+    <a class="btn btn-outline-primary btn-sm" href="{{ url_for('schemes.edit', scheme_id=scheme.id) }}">
+      <i class="bi bi-pencil me-1"></i>Edit
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="alert alert-info d-flex align-items-start gap-2">
+  <i class="bi bi-info-circle mt-1"></i>
+  <div class="small">
+    Scheme information is stored for the demo. The system may mark a beneficiary
+    as <strong>potentially relevant</strong> using project-configured rules, but
+    never claims guaranteed government eligibility.
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Linked beneficiaries</div>
+        <div class="h4 mb-0">{{ counts.TOTAL }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Applied</div>
+        <div class="h4 mb-0 text-warning-emphasis">{{ counts.APPLIED }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Enrolled</div>
+        <div class="h4 mb-0 text-success">{{ counts.ENROLLED }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Rejected</div>
+        <div class="h4 mb-0 text-danger">{{ counts.REJECTED }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">Scheme information</div>
+      <div class="card-body">
+        <dl class="row mb-0 small">
+          <dt class="col-5">Category</dt><dd class="col-7">{{ scheme.category or '—' }}</dd>
+          <dt class="col-5">Target group</dt><dd class="col-7">{{ scheme.target_group or '—' }}</dd>
+          <dt class="col-5">Description</dt><dd class="col-7">{{ scheme.description or '—' }}</dd>
+          <dt class="col-5">Benefits</dt><dd class="col-7">{{ scheme.benefits or '—' }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">Eligibility &amp; application</div>
+      <div class="card-body">
+        <dl class="row mb-0 small">
+          <dt class="col-5">Eligibility information</dt><dd class="col-7">{{ scheme.eligibility or '—' }}</dd>
+          <dt class="col-5">Required documents</dt><dd class="col-7">{{ scheme.required_documents or '—' }}</dd>
+          <dt class="col-5">Application</dt><dd class="col-7">{{ scheme.application_info or '—' }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-people me-1"></i>Linked beneficiaries</span>
+        <span class="small text-muted">{{ counts.TOTAL }} record(s)</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Beneficiary</th>
+              <th>Centre</th>
+              <th>Status</th>
+              <th>Applied</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for link in links %}
+            <tr>
+              <td class="small">
+                <a class="text-decoration-none"
+                   href="{{ url_for('schemes.beneficiary_schemes', beneficiary_id=link.beneficiary_id) }}">
+                  {{ link.beneficiary.full_name if link.beneficiary else '—' }}
+                </a>
+              </td>
+              <td class="small">{{ link.beneficiary.centre.name if link.beneficiary and link.beneficiary.centre else '—' }}</td>
+              <td><span class="badge {{ status_badges.get(link.status.value, 'text-bg-secondary') }}">{{ status_labels.get(link.status.value, link.status.value.title()) }}</span></td>
+              <td class="small">{{ link.applied_date.strftime('%d %b %Y') if link.applied_date else '—' }}</td>
+              <td class="small text-muted">{{ link.notes or '—' }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="5" class="text-center text-muted py-5">
+                <i class="bi bi-people display-6 d-block mb-2"></i>
+                No beneficiaries linked to this scheme yet.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
