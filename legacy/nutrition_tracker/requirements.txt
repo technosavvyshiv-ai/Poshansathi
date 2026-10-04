@@ -1,2 +1,0 @@
-# Poshansathi uses only the Python standard library.
-# No third-party packages are required. Python 3.10+ recommended.
