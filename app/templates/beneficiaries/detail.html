@@ -110,6 +110,12 @@
               View growth history &amp; chart
             </a>
           </dd>
+          <dt class="col-5">Vaccination</dt>
+          <dd class="col-7">
+            <a href="{{ url_for('vaccination.history', child_id=child.id) }}">
+              View vaccination history
+            </a>
+          </dd>
         </dl>
       </div>
     </div>
@@ -165,7 +171,10 @@
           </div>
           <div class="col-6 col-md-3">
             <div class="small text-muted">Vaccinations</div>
-            <div class="h4 mb-0">{{ beneficiary.child.vaccinations|length }}</div>
+            <a class="h4 mb-0 d-block text-decoration-none"
+               href="{{ url_for('vaccination.history', child_id=beneficiary.child.id) }}">
+              {{ beneficiary.child.vaccinations|length }}
+            </a>
           </div>
           <div class="col-6 col-md-3">
             <div class="small text-muted">Attendance records</div>
@@ -194,8 +203,8 @@
         </div>
         <p class="text-muted small mb-0 mt-3">
           <i class="bi bi-info-circle me-1"></i>
-          Vaccination, maternal health, nutrition, alerts, home visits and
-          reports are added in later phases.
+          Maternal health, nutrition, alerts, home visits and reports are added
+          in later phases.
         </p>
       </div>
     </div>

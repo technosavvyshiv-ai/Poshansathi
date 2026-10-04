@@ -16,7 +16,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
-from app.utils.constants import BeneficiaryType, Gender, RiskLevel
+from app.utils.constants import BeneficiaryType, Gender, RiskLevel, VaccinationStatus
 
 #: Blood groups accepted for child/mother profiles (demo data only).
 BLOOD_GROUPS = ("A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-")
@@ -399,6 +399,87 @@ def validate_growth_fields(form, child):
     return cleaned, errors
 
 
+# ---------------------------------------------------------------------------
+# Vaccination record validation (Phase 5)
+# ---------------------------------------------------------------------------
+def validate_vaccination_fields(form, child):
+    """Validate a vaccination record for ``child``.
+
+    The stored ``Vaccination.status`` enum is the source of truth; the rules
+    below only keep the submitted data internally consistent.  No clinical
+    immunisation schedule is assumed.
+
+    Consistency rules (project-defined, deterministic):
+
+    * ``vaccine_name`` and ``dose_number`` (>= 1) are always required;
+    * ``status`` is required and must be one of the stored enum values;
+    * an administered date is **required** when the status is ``COMPLETED`` and
+      must be blank for every other status;
+    * an administered date may not be in the future;
+    * both dates (when supplied) must fall on or after the child's date of birth;
+    * an administered date may not be before the stored scheduled date.
+    """
+    errors: dict[str, str] = {}
+    date_of_birth = child.beneficiary.date_of_birth if child.beneficiary else None
+
+    cleaned = {
+        "vaccine_name": _parse_str(
+            form, "vaccine_name", errors, required=True, max_len=120,
+            label="Vaccine name",
+        ),
+        "dose_number": _parse_int(
+            form, "dose_number", errors, minimum=1, maximum=20,
+            label="Dose number",
+        ),
+        "scheduled_date": _parse_date(
+            form, "scheduled_date", errors, label="Scheduled date"
+        ),
+        "administered_date": _parse_date(
+            form, "administered_date", errors, not_future=True,
+            label="Administered date",
+        ),
+        "status": _parse_enum(
+            form, "status", VaccinationStatus, errors, required=True,
+            default=VaccinationStatus.UPCOMING,
+        ),
+        "notes": _parse_str(form, "notes", errors, max_len=1000, label="Notes"),
+    }
+
+    if cleaned.get("dose_number") is None and "dose_number" not in errors:
+        errors["dose_number"] = "Dose number is required."
+
+    status = cleaned.get("status")
+    administered = cleaned.get("administered_date")
+    scheduled = cleaned.get("scheduled_date")
+
+    if status == VaccinationStatus.COMPLETED:
+        if administered is None and "administered_date" not in errors:
+            errors["administered_date"] = (
+                "Administered date is required when the status is Completed."
+            )
+    elif administered is not None:
+        errors["administered_date"] = (
+            "Clear the administered date or set the status to Completed."
+        )
+
+    if administered and date_of_birth and administered < date_of_birth:
+        errors["administered_date"] = (
+            "Administered date cannot be before the child's date of birth."
+        )
+
+    if scheduled and date_of_birth and scheduled < date_of_birth:
+        errors["scheduled_date"] = (
+            "Scheduled date cannot be before the child's date of birth."
+        )
+
+    if administered and scheduled and administered < scheduled:
+        errors["administered_date"] = (
+            "Administered date cannot be before the scheduled date."
+        )
+
+    return cleaned, errors
+
+
 __all__ = [
     "BLOOD_GROUPS",
     "MAX_CHILD_AGE_YEARS",
@@ -408,4 +489,5 @@ __all__ = [
     "validate_mother_fields",
     "validate_centre_fields",
     "validate_growth_fields",
+    "validate_vaccination_fields",
 ]
