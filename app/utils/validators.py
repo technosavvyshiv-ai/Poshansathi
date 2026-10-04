@@ -480,12 +480,101 @@ def validate_vaccination_fields(form, child):
     return cleaned, errors
 
 
+# ---------------------------------------------------------------------------
+# Maternal health (ANC) record validation (Phase 6)
+# ---------------------------------------------------------------------------
+def validate_maternal_health_fields(form, mother):
+    """Validate an antenatal-care record for ``mother``.
+
+    Bounds are broad data-integrity guards, **not** clinical thresholds.  The
+    stored ``risk_category`` is chosen by the user; PoshanSathi never derives a
+    clinical risk.  Consistency rules (project-defined, deterministic):
+
+    * ``visit_date`` is required, must be a valid date and cannot be in the
+      future;
+    * the visit date cannot precede the mother's date of birth or the stored
+      last menstrual period;
+    * ``pregnancy_month`` (1-9), blood pressure and the other measurements use
+      broad sanity ranges;
+    * diastolic blood pressure must be lower than systolic when both are given;
+    * ``risk_category`` is required and must be one of the stored enum values;
+    * a next follow-up date cannot be before the ANC visit date.
+    """
+    errors: dict[str, str] = {}
+    beneficiary = mother.beneficiary if mother else None
+    date_of_birth = beneficiary.date_of_birth if beneficiary else None
+    lmp = mother.last_menstrual_period if mother else None
+
+    cleaned = {
+        "visit_date": _parse_date(
+            form, "visit_date", errors, required=True, not_future=True,
+            label="ANC visit date",
+        ),
+        "pregnancy_month": _parse_int(
+            form, "pregnancy_month", errors, minimum=1, maximum=9,
+            label="Pregnancy month",
+        ),
+        "weight_kg": _parse_decimal(
+            form, "weight_kg", errors, minimum=Decimal("20"),
+            maximum=Decimal("200"), label="Weight (kg)",
+        ),
+        "haemoglobin": _parse_decimal(
+            form, "haemoglobin", errors, minimum=Decimal("3"),
+            maximum=Decimal("20"), label="Haemoglobin (g/dL)",
+        ),
+        "systolic_bp": _parse_int(
+            form, "systolic_bp", errors, minimum=50, maximum=250,
+            label="Systolic blood pressure",
+        ),
+        "diastolic_bp": _parse_int(
+            form, "diastolic_bp", errors, minimum=30, maximum=150,
+            label="Diastolic blood pressure",
+        ),
+        "risk_category": _parse_enum(
+            form, "risk_category", RiskLevel, errors, required=True,
+            default=RiskLevel.LOW,
+        ),
+        "next_follow_up_date": _parse_date(
+            form, "next_follow_up_date", errors, label="Next follow-up date"
+        ),
+        "notes": _parse_str(form, "notes", errors, max_len=1000, label="Notes"),
+    }
+
+    visit_date = cleaned.get("visit_date")
+    follow_up = cleaned.get("next_follow_up_date")
+
+    if visit_date and date_of_birth and visit_date < date_of_birth:
+        errors["visit_date"] = (
+            "ANC visit date cannot be before the mother's date of birth."
+        )
+
+    if visit_date and lmp and visit_date < lmp:
+        errors["visit_date"] = (
+            "ANC visit date cannot be before the last menstrual period."
+        )
+
+    if follow_up and visit_date and follow_up < visit_date:
+        errors["next_follow_up_date"] = (
+            "Next follow-up date cannot be before the ANC visit date."
+        )
+
+    systolic = cleaned.get("systolic_bp")
+    diastolic = cleaned.get("diastolic_bp")
+    if systolic is not None and diastolic is not None and diastolic >= systolic:
+        errors["diastolic_bp"] = (
+            "Diastolic blood pressure must be lower than systolic blood pressure."
+        )
+
+    return cleaned, errors
+
+
 __all__ = [
     "BLOOD_GROUPS",
     "MAX_CHILD_AGE_YEARS",
     "ValidationError",
     "validate_beneficiary_fields",
     "validate_child_fields",
+    "validate_maternal_health_fields",
     "validate_mother_fields",
     "validate_centre_fields",
     "validate_growth_fields",

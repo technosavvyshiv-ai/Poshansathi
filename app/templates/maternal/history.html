@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% block title %}Maternal Health — {{ mother.beneficiary.full_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
+  <div>
+    <h1 class="h3 mb-1">
+      <i class="bi bi-heart-pulse me-2"></i>Maternal Health
+    </h1>
+    <p class="text-muted small mb-0">
+      <a class="text-decoration-none"
+         href="{{ url_for('beneficiaries.detail', beneficiary_id=beneficiary.id) }}">
+        {{ beneficiary.full_name }}
+      </a>
+      &middot; DOB {{ beneficiary.date_of_birth.strftime('%d %b %Y') if beneficiary.date_of_birth else '—' }}
+      &middot; {{ beneficiary.centre.name if beneficiary.centre else '—' }}
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm"
+       href="{{ url_for('beneficiaries.detail', beneficiary_id=beneficiary.id) }}">
+      <i class="bi bi-person-badge me-1"></i>Profile
+    </a>
+    {% if can_write %}
+    <a class="btn btn-success btn-sm" href="{{ url_for('maternal.create', mother_id=mother.id) }}">
+      <i class="bi bi-plus-circle me-1"></i>Record ANC visit
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">ANC visits</div>
+        <div class="h4 mb-0">{{ summary.total }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Latest risk</div>
+        {% if summary.latest %}
+          <span class="badge {{ summary.latest_risk_badge }} mt-1">{{ summary.latest_risk_label }}</span>
+        {% else %}
+          <div class="text-muted mt-1">—</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Latest haemoglobin</div>
+        <div class="h4 mb-0">
+          {{ summary.latest.haemoglobin ~ ' g/dL' if summary.latest and summary.latest.haemoglobin is not none else '—' }}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Latest blood pressure</div>
+        <div class="h4 mb-0">
+          {% if summary.latest and summary.latest.systolic_bp and summary.latest.diastolic_bp %}
+            {{ summary.latest.systolic_bp }}/{{ summary.latest.diastolic_bp }}
+          {% else %}—{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if summary.pending_follow_up %}
+<div class="alert {{ 'alert-danger' if summary.pending_follow_up.overdue else 'alert-info' }} d-flex align-items-start gap-2">
+  <i class="bi bi-calendar-check mt-1"></i>
+  <div class="small">
+    <strong>{{ summary.pending_follow_up.label }}</strong>
+    — next follow-up on
+    {{ summary.pending_follow_up.date.strftime('%d %b %Y') }}.
+    <span class="text-muted">Project-defined demo follow-up view.</span>
+  </div>
+</div>
+{% endif %}
+
+<div class="card shadow-sm">
+  <div class="card-header bg-white fw-semibold">ANC visit history</div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Visit date</th>
+          <th>Month</th>
+          <th>Weight</th>
+          <th>Hb</th>
+          <th>BP</th>
+          <th>Risk</th>
+          <th>Next follow-up</th>
+          <th>Notes</th>
+          {% if can_write %}<th class="text-end">Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in history %}
+        <tr>
+          <td class="small">{{ item.record.visit_date.strftime('%d %b %Y') }}</td>
+          <td class="small">{{ item.record.pregnancy_month or '—' }}</td>
+          <td class="small">{{ item.record.weight_kg ~ ' kg' if item.record.weight_kg is not none else '—' }}</td>
+          <td class="small">{{ item.record.haemoglobin ~ ' g/dL' if item.record.haemoglobin is not none else '—' }}</td>
+          <td class="small">
+            {% if item.record.systolic_bp and item.record.diastolic_bp %}
+              {{ item.record.systolic_bp }}/{{ item.record.diastolic_bp }}
+            {% else %}—{% endif %}
+          </td>
+          <td><span class="badge {{ item.risk_badge }}">{{ item.risk_label }}</span></td>
+          <td class="small">
+            {% if item.record.next_follow_up_date %}
+              {{ item.record.next_follow_up_date.strftime('%d %b %Y') }}
+              <span class="badge {{ item.follow_up_badge }} ms-1">{{ item.follow_up_label }}</span>
+            {% else %}&mdash;{% endif %}
+          </td>
+          <td class="small text-muted">{{ item.record.notes or '—' }}</td>
+          {% if can_write %}
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-primary"
+               href="{{ url_for('maternal.edit', mother_id=mother.id, record_id=item.record.id) }}"
+               title="Edit"><i class="bi bi-pencil"></i></a>
+          </td>
+          {% endif %}
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="{{ 9 if can_write else 8 }}" class="text-center text-muted py-5">
+            <i class="bi bi-heart-pulse display-6 d-block mb-2"></i>
+            No ANC records found.
+            {% if can_write %}Record the first visit to get started.{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<p class="text-muted small mt-3 mb-0">
+  <i class="bi bi-info-circle me-1"></i>
+  Risk category is <strong>recorded by the health worker</strong> and the
+  follow-up highlight is a <strong>project-defined demo view</strong> derived
+  only from the stored follow-up date. This is not medical guidance and
+  PoshanSathi does not make clinical decisions.
+  <span class="text-muted">Rule: <code>{{ rule_id }}</code></span>
+</p>
+{% endblock %}

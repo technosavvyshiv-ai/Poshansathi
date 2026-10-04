@@ -150,6 +150,12 @@
               {{ mother.current_risk_level.value.title() }}
             </span>
           </dd>
+          <dt class="col-5">Maternal health</dt>
+          <dd class="col-7">
+            <a href="{{ url_for('maternal.history', mother_id=mother.id) }}">
+              View ANC visit history
+            </a>
+          </dd>
         </dl>
       </div>
     </div>
@@ -183,7 +189,10 @@
           {% else %}
           <div class="col-6 col-md-3">
             <div class="small text-muted">Maternal health records</div>
-            <div class="h4 mb-0">{{ beneficiary.mother.health_records|length if beneficiary.mother else 0 }}</div>
+            <a class="h4 mb-0 d-block text-decoration-none"
+               href="{{ url_for('maternal.history', mother_id=beneficiary.mother.id) if beneficiary.mother else '#' }}">
+              {{ beneficiary.mother.health_records|length if beneficiary.mother else 0 }}
+            </a>
           </div>
           <div class="col-6 col-md-3">
             <div class="small text-muted">Linked children</div>
@@ -203,8 +212,7 @@
         </div>
         <p class="text-muted small mb-0 mt-3">
           <i class="bi bi-info-circle me-1"></i>
-          Maternal health, nutrition, alerts, home visits and reports are added
-          in later phases.
+          Nutrition, alerts, home visits and reports are added in later phases.
         </p>
       </div>
     </div>
