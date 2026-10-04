@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import threading
 from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
@@ -377,6 +378,14 @@ def render_week(conn, user) -> str:
 # --------------------------------------------------------------------------
 # Request handling
 # --------------------------------------------------------------------------
+def synchronized(method):
+    """Serialise request handling so the shared SQLite connection is safe."""
+    def wrapper(self, *args, **kwargs):
+        with self.server.lock:
+            return method(self, *args, **kwargs)
+    return wrapper
+
+
 class PoshansathiHandler(BaseHTTPRequestHandler):
     conn = None  # set on the server instance
 
@@ -407,6 +416,7 @@ class PoshansathiHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     # -- GET ---------------------------------------------------------------
+    @synchronized
     def do_GET(self):
         parsed = urlparse(self.path)
         params = parse_qs(parsed.query)
@@ -440,6 +450,7 @@ class PoshansathiHandler(BaseHTTPRequestHandler):
         self._send(body)
 
     # -- POST --------------------------------------------------------------
+    @synchronized
     def do_POST(self):
         length = int(self.headers.get("Content-Length", 0))
         raw = self.rfile.read(length).decode("utf-8")
@@ -481,9 +492,10 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
 
-    conn = database.init_db()
+    conn = database.init_db(check_same_thread=False)
     PoshansathiHandler.conn = conn
     server = ThreadingHTTPServer((args.host, args.port), PoshansathiHandler)
+    server.lock = threading.Lock()
     print(f"Poshansathi is running at http://{args.host}:{args.port}  (Ctrl+C to stop)")
     try:
         server.serve_forever()

@@ -63,21 +63,29 @@ CREATE INDEX IF NOT EXISTS idx_entries_user_date
 """
 
 
-def get_connection(db_path=None) -> sqlite3.Connection:
-    """Open a connection with row access by column name."""
+def get_connection(db_path=None, check_same_thread: bool = True) -> sqlite3.Connection:
+    """Open a connection with row access by column name.
+
+    ``check_same_thread=False`` is used by the threaded web server so a single
+    connection can serve multiple request threads.  Callers that share a
+    connection across threads must serialise access (see ``webapp.py``).
+    """
     path = db_path or DEFAULT_DB_PATH
-    conn = sqlite3.connect(str(path))
+    conn = sqlite3.connect(str(path), check_same_thread=check_same_thread)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    # Wait rather than failing immediately if another thread is writing.
+    conn.execute("PRAGMA busy_timeout = 5000")
     return conn
 
 
-def init_db(conn: sqlite3.Connection | None = None, db_path=None) -> sqlite3.Connection:
+def init_db(conn: sqlite3.Connection | None = None, db_path=None,
+            check_same_thread: bool = True) -> sqlite3.Connection:
     """Create tables (if needed) and seed the food database.
 
     Safe to call repeatedly - existing data is left untouched.
     """
-    conn = conn or get_connection(db_path)
+    conn = conn or get_connection(db_path, check_same_thread=check_same_thread)
     conn.executescript(SCHEMA)
     _seed_foods(conn)
     conn.commit()
