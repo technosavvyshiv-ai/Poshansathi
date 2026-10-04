@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="p-4 mb-4 rounded-3 app-hero">
+  <h1 class="display-6 fw-bold mb-2">
+    <i class="bi bi-heart-pulse-fill me-2"></i>PoshanSathi
+  </h1>
+  <p class="lead mb-3">
+    Smart Nutrition &amp; Welfare Tracking System for Anganwadi Centres
+    <span class="badge text-bg-light ms-2">Demo project</span>
+  </p>
+  <a class="btn btn-success" href="{{ url_for('auth.login') }}">
+    <i class="bi bi-box-arrow-in-right me-1"></i>Sign in
+  </a>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">
+          <i class="bi bi-check-circle-fill text-success me-2"></i>Foundation ready
+        </h5>
+        <p class="card-text mb-0">
+          The Flask application factory, configuration, extensions and base
+          layout are in place. Feature modules are added in later phases.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">
+          <i class="bi bi-diagram-3 me-2"></i>Next phases
+        </h5>
+        <ul class="mb-0 small text-muted">
+          <li>Phase 0 — Repository and foundation</li>
+          <li>Phase 1 — Database</li>
+          <li>Phase 2 — Authentication and roles</li>
+          <li>Phase 3+ — Beneficiaries, health, alerts, dashboards</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

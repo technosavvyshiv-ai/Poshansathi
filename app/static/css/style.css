@@ -1,0 +1,49 @@
+/* PoshanSathi — global styles (Phase 0 foundation) */
+
+:root {
+  --ps-green: #2e7d32;
+  --ps-green-light: #66bb6a;
+  --ps-bg: #f4f7f2;
+}
+
+body {
+  background: var(--ps-bg);
+  color: #22301f;
+  min-height: 100vh;
+}
+
+.app-navbar {
+  background: linear-gradient(135deg, var(--ps-green), var(--ps-green-light));
+}
+
+.app-navbar .navbar-brand {
+  font-weight: 700;
+}
+
+.sidebar {
+  background: #ffffff;
+  min-height: calc(100vh - 56px);
+  border-right: 1px solid #e6ece4;
+}
+
+.sidebar-nav .nav-link {
+  color: #37474f;
+  border-radius: 0.5rem;
+  margin: 0.15rem 0.5rem;
+}
+
+.sidebar-nav .nav-link.active,
+.sidebar-nav .nav-link:hover {
+  background: #e8f5e9;
+  color: var(--ps-green);
+}
+
+.app-hero {
+  background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+  border: 1px solid #dcedc8;
+}
+
+.app-footer {
+  border-top: 1px solid #e6ece4;
+  background: #ffffff;
+}

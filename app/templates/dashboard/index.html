@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="p-4 mb-4 rounded-3 app-hero">
+  <h1 class="h3 fw-bold mb-1">
+    <i class="bi bi-speedometer2 me-2"></i>Welcome, {{ current_user.full_name }}
+  </h1>
+  <p class="mb-0 text-muted">
+    You are signed in as
+    <span class="badge text-bg-success">
+      {{ role_labels.get(current_user.role, current_user.role.value) }}
+    </span>
+  </p>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+        <h2 class="h5 card-title">
+          <i class="bi bi-person-badge me-2"></i>Account
+        </h2>
+        <dl class="row mb-0 small">
+          <dt class="col-5">Username</dt>
+          <dd class="col-7">{{ current_user.username }}</dd>
+          <dt class="col-5">Role</dt>
+          <dd class="col-7">{{ current_user.role.value }}</dd>
+          <dt class="col-5">Centre</dt>
+          <dd class="col-7">
+            {{ current_user.centre.name if current_user.centre else '—' }}
+          </dd>
+          <dt class="col-5">Last login</dt>
+          <dd class="col-7">
+            {{ current_user.last_login_at.strftime('%d %b %Y, %H:%M')
+               if current_user.last_login_at else '—' }}
+          </dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+        <h2 class="h5 card-title">
+          <i class="bi bi-diagram-3 me-2"></i>Available to your role
+        </h2>
+        {% if current_user.role == UserRole.ADMIN %}
+          <p class="mb-0 small text-muted">
+            Administrator access: manage users, centres, schemes and demo data
+            in later phases.
+          </p>
+        {% elif current_user.role == UserRole.AWW %}
+          <p class="mb-0 small text-muted">
+            Anganwadi worker access: beneficiaries, growth, vaccination,
+            maternal health, nutrition, attendance, alerts and home visits in
+            later phases.
+          </p>
+        {% elif current_user.role == UserRole.SUPERVISOR %}
+          <p class="mb-0 small text-muted">
+            Supervisor access: multi-centre monitoring, vaccination coverage,
+            pending follow-ups and reports in later phases.
+          </p>
+        {% else %}
+          <p class="mb-0 small text-muted">
+            Programme officer access: aggregated dashboards, centre comparison
+            and reports in later phases.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

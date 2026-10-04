@@ -1,11 +1,31 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
 # Python
 __pycache__/
 *.py[cod]
+*.egg-info/
 .venv/
 venv/
+env/
 
-# Generated database
-poshansathi/*.db
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
 
-# OS
+# Databases / local data
+*.sqlite
+*.sqlite3
+*.db
+
+# Logs
+*.log
+
+# OS / IDE
 .DS_Store
+Thumbs.db
+.vscode/
+.idea/
