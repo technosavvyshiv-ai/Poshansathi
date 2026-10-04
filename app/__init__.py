@@ -103,6 +103,7 @@ def _register_context_processors(app: Flask) -> None:
 def _register_blueprints(app: Flask) -> None:
     """Register application blueprints."""
     from app.routes.admin import bp as admin_bp
+    from app.routes.attendance import bp as attendance_bp
     from app.routes.auth import bp as auth_bp
     from app.routes.beneficiaries import bp as beneficiaries_bp
     from app.routes.centres import bp as centres_bp
@@ -121,6 +122,7 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(vaccination_bp)
     app.register_blueprint(maternal_bp)
     app.register_blueprint(nutrition_bp)
+    app.register_blueprint(attendance_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(main_bp)
 

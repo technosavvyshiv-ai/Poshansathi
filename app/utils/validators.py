@@ -16,7 +16,13 @@ from __future__ import annotations
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
-from app.utils.constants import BeneficiaryType, Gender, RiskLevel, VaccinationStatus
+from app.utils.constants import (
+    AttendanceStatus,
+    BeneficiaryType,
+    Gender,
+    RiskLevel,
+    VaccinationStatus,
+)
 
 #: Blood groups accepted for child/mother profiles (demo data only).
 BLOOD_GROUPS = ("A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-")
@@ -661,10 +667,61 @@ def validate_nutrition_distribution_fields(form):
     return cleaned, errors
 
 
+# ---------------------------------------------------------------------------
+# Attendance validation (Phase 8)
+# ---------------------------------------------------------------------------
+def validate_attendance_fields(form, child):
+    """Validate a daily attendance record for ``child``.
+
+    Rules (project-defined, deterministic):
+
+    * ``attendance_date`` is required, a valid date and cannot be in the future;
+    * ``attendance_date`` cannot precede the child's date of birth;
+    * ``status`` is required and must be one of the stored enum values
+      (``PRESENT`` / ``ABSENT``);
+    * ``note`` is optional and limited to the column length.
+
+    The database (and the service layer) additionally prevents two records for
+    the same child and date.
+    """
+    errors: dict[str, str] = {}
+    beneficiary = child.beneficiary if child else None
+    date_of_birth = beneficiary.date_of_birth if beneficiary else None
+
+    cleaned = {
+        "attendance_date": _parse_date(
+            form,
+            "attendance_date",
+            errors,
+            required=True,
+            not_future=True,
+            label="Attendance date",
+        ),
+        "status": _parse_enum(
+            form,
+            "status",
+            AttendanceStatus,
+            errors,
+            required=True,
+            label="Attendance status",
+        ),
+        "note": _parse_str(form, "note", errors, max_len=255, label="Note"),
+    }
+
+    attendance_date = cleaned.get("attendance_date")
+    if attendance_date and date_of_birth and attendance_date < date_of_birth:
+        errors["attendance_date"] = (
+            "Attendance date cannot be before the child's date of birth."
+        )
+
+    return cleaned, errors
+
+
 __all__ = [
     "BLOOD_GROUPS",
     "MAX_CHILD_AGE_YEARS",
     "ValidationError",
+    "validate_attendance_fields",
     "validate_beneficiary_fields",
     "validate_child_fields",
     "validate_maternal_health_fields",

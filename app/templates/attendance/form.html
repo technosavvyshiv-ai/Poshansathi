@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if mode == 'edit' else 'Record' }} Attendance — {{ beneficiary.full_name }}{% endblock %}
+
+{% macro field_error(errors, name) %}
+  {% if errors.get(name) %}
+    <div class="invalid-feedback d-block">{{ errors.get(name) }}</div>
+  {% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <div>
+    <h1 class="h3 mb-0">
+      <i class="bi bi-calendar2-check me-2"></i>
+      {{ 'Edit attendance' if mode == 'edit' else 'Record attendance' }}
+    </h1>
+    <p class="text-muted small mb-0">
+      {{ beneficiary.full_name }}
+      &middot; DOB {{ beneficiary.date_of_birth.strftime('%d %b %Y') if beneficiary.date_of_birth else '—' }}
+      &middot; {{ beneficiary.centre.name if beneficiary.centre else '—' }}
+    </p>
+  </div>
+  <a class="btn btn-outline-secondary btn-sm"
+     href="{{ url_for('attendance.child_history', child_id=child.id) }}">
+    <i class="bi bi-arrow-left me-1"></i>Back to attendance
+  </a>
+</div>
+
+<form method="post" novalidate
+      action="{{ url_for('attendance.edit', child_id=child.id, record_id=record.id)
+                if mode == 'edit' else url_for('attendance.create', child_id=child.id) }}">
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white fw-semibold">Daily attendance</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="attendance_date" class="form-label">
+                Attendance date <span class="text-danger">*</span>
+              </label>
+              <input type="date" class="form-control {{ 'is-invalid' if errors.get('attendance_date') }}"
+                     id="attendance_date" name="attendance_date"
+                     value="{{ form.get('attendance_date', '') }}" required>
+              {{ field_error(errors, 'attendance_date') }}
+            </div>
+            <div class="col-md-6">
+              <label for="status" class="form-label">
+                Status <span class="text-danger">*</span>
+              </label>
+              <select class="form-select {{ 'is-invalid' if errors.get('status') }}"
+                      id="status" name="status" required>
+                <option value="">Select a status…</option>
+                <option value="PRESENT" {{ 'selected' if form.get('status') == 'PRESENT' }}>Present</option>
+                <option value="ABSENT" {{ 'selected' if form.get('status') == 'ABSENT' }}>Absent</option>
+              </select>
+              {{ field_error(errors, 'status') }}
+            </div>
+            <div class="col-12">
+              <label for="note" class="form-label">Note</label>
+              <textarea class="form-control {{ 'is-invalid' if errors.get('note') }}"
+                        id="note" name="note" rows="3"
+                        maxlength="255">{{ form.get('note', '') }}</textarea>
+              {{ field_error(errors, 'note') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm mb-3 border-warning">
+        <div class="card-body">
+          <h2 class="h6"><i class="bi bi-info-circle me-1"></i>One record per day</h2>
+          <p class="small text-muted mb-0">
+            A child can have at most one attendance record per date. To change a
+            day that is already recorded, use the edit action instead of creating
+            a second entry.
+          </p>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-success w-100">
+        <i class="bi bi-check2-circle me-1"></i>
+        {{ 'Save changes' if mode == 'edit' else 'Record attendance' }}
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}

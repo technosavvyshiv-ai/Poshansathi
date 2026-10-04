@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% block title %}Attendance — {{ beneficiary.full_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
+  <div>
+    <h1 class="h3 mb-1"><i class="bi bi-calendar2-check me-2"></i>Attendance</h1>
+    <p class="text-muted small mb-0">
+      <a class="text-decoration-none"
+         href="{{ url_for('beneficiaries.detail', beneficiary_id=beneficiary.id) }}">
+        {{ beneficiary.full_name }}
+      </a>
+      &middot; DOB {{ beneficiary.date_of_birth.strftime('%d %b %Y') if beneficiary.date_of_birth else '—' }}
+      &middot; {{ beneficiary.centre.name if beneficiary.centre else '—' }}
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm"
+       href="{{ url_for('beneficiaries.detail', beneficiary_id=beneficiary.id) }}">
+      <i class="bi bi-person-badge me-1"></i>Profile
+    </a>
+    {% if can_write %}
+    <a class="btn btn-success btn-sm" href="{{ url_for('attendance.create', child_id=child.id) }}">
+      <i class="bi bi-plus-circle me-1"></i>Record attendance
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Recorded</div>
+        <div class="h4 mb-0">{{ summary.total }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Present</div>
+        <div class="h4 mb-0 text-success">{{ summary.present }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Absent</div>
+        <div class="h4 mb-0 text-danger">{{ summary.absent }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Overall attendance</div>
+        <div class="h4 mb-0">
+          {{ summary.attendance_percentage ~ '%' if summary.attendance_percentage is not none else '—' }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+  <div class="card-header bg-white fw-semibold d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span><i class="bi bi-calendar3 me-1"></i>Monthly summary</span>
+    <form class="d-flex gap-2" method="get"
+          action="{{ url_for('attendance.child_history', child_id=child.id) }}">
+      <input type="month" class="form-control form-control-sm" name="month" value="{{ month_value }}">
+      <button class="btn btn-outline-primary btn-sm" type="submit">
+        <i class="bi bi-arrow-repeat me-1"></i>View
+      </button>
+    </form>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-6 col-md-3">
+        <div class="border rounded p-3 text-center h-100">
+          <div class="small text-muted">Selected month</div>
+          <div class="h5 mb-0">{{ monthly.start.strftime('%b %Y') }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="border rounded p-3 text-center h-100">
+          <div class="small text-muted">Present</div>
+          <div class="h5 mb-0 text-success">{{ monthly.present }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="border rounded p-3 text-center h-100">
+          <div class="small text-muted">Absent</div>
+          <div class="h5 mb-0 text-danger">{{ monthly.absent }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="border rounded p-3 text-center h-100">
+          <div class="small text-muted">Attendance</div>
+          <div class="h5 mb-0">
+            {{ monthly.attendance_percentage ~ '%' if monthly.attendance_percentage is not none else '—' }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+  <div class="card-header bg-white fw-semibold">Recent months</div>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Month</th>
+          <th class="text-end">Present</th>
+          <th class="text-end">Absent</th>
+          <th class="text-end">Recorded</th>
+          <th class="text-end">Attendance</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in recent_months %}
+        <tr>
+          <td class="small">{{ item.start.strftime('%b %Y') }}</td>
+          <td class="small text-end">{{ item.present }}</td>
+          <td class="small text-end text-danger">{{ item.absent }}</td>
+          <td class="small text-end">{{ item.total }}</td>
+          <td class="small text-end">
+            {{ item.attendance_percentage ~ '%' if item.attendance_percentage is not none else '—' }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header bg-white fw-semibold">Attendance history</div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Date</th>
+          <th>Status</th>
+          <th>Note</th>
+          <th>Recorded by</th>
+          {% if can_write %}<th class="text-end">Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in history %}
+        <tr>
+          <td class="small">{{ item.record.attendance_date.strftime('%d %b %Y') }}</td>
+          <td><span class="badge {{ item.status_badge }}">{{ item.status_label }}</span></td>
+          <td class="small text-muted">{{ item.record.note or '—' }}</td>
+          <td class="small">{{ item.record.recorded_by.full_name if item.record.recorded_by else '—' }}</td>
+          {% if can_write %}
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-primary"
+               href="{{ url_for('attendance.edit', child_id=child.id, record_id=item.record.id) }}"
+               title="Edit"><i class="bi bi-pencil"></i></a>
+          </td>
+          {% endif %}
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="{{ 5 if can_write else 4 }}" class="text-center text-muted py-5">
+            <i class="bi bi-calendar-x display-6 d-block mb-2"></i>
+            No attendance records found.
+            {% if can_write %}Record the first entry to get started.{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
