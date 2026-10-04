@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% block title %}Nutrition{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
+  <div>
+    <h1 class="h3 mb-1"><i class="bi bi-basket me-2"></i>Nutrition &amp; Inventory</h1>
+    <p class="text-muted small mb-0">
+      Item catalogue, centre stock position and beneficiary distributions.
+    </p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    {% if can_manage_items %}
+    <a class="btn btn-outline-primary btn-sm" href="{{ url_for('nutrition.item_create') }}">
+      <i class="bi bi-plus-circle me-1"></i>New item
+    </a>
+    {% endif %}
+    {% if can_write %}
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('nutrition.stock_new') }}">
+      <i class="bi bi-box-arrow-in-down me-1"></i>Record stock
+    </a>
+    <a class="btn btn-success btn-sm" href="{{ url_for('nutrition.distribution_create') }}">
+      <i class="bi bi-box-arrow-up me-1"></i>Record distribution
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Catalogue items</div>
+        <div class="h4 mb-0">{{ summary.item_count }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Inventory rows</div>
+        <div class="h4 mb-0">{{ summary.inventory_rows }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Low stock</div>
+        <div class="h4 mb-0 {{ 'text-danger' if summary.low_stock_count else '' }}">{{ summary.low_stock_count }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-muted">Distributions</div>
+        <div class="h4 mb-0">{{ summary.distribution_count }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if low_stock %}
+<div class="alert alert-danger d-flex align-items-start gap-2">
+  <i class="bi bi-exclamation-triangle mt-1"></i>
+  <div class="small">
+    <strong>Low stock:</strong>
+    {% for row in low_stock %}
+      {{ row.item.name }} at {{ row.centre.name }} ({{ row.available_quantity }} {{ row.unit }}){{ ', ' if not loop.last }}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="card shadow-sm mb-3">
+  <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-box-seam me-1"></i>Catalogue</span>
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('nutrition.distributions') }}">
+      Distribution history
+    </a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Item</th>
+          <th>Category</th>
+          <th>Unit</th>
+          <th>Status</th>
+          {% if can_manage_items %}<th class="text-end">Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td class="small fw-semibold">{{ item.name }}</td>
+          <td class="small">{{ item.category or '—' }}</td>
+          <td class="small">{{ item.unit }}</td>
+          <td><span class="badge text-bg-success">Active</span></td>
+          {% if can_manage_items %}
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-primary"
+               href="{{ url_for('nutrition.item_edit', item_id=item.id) }}" title="Edit">
+              <i class="bi bi-pencil"></i>
+            </a>
+          </td>
+          {% endif %}
+        </tr>
+        {% else %}
+        <tr><td colspan="{{ 5 if can_manage_items else 4 }}" class="text-center text-muted py-4">No nutrition items.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header bg-white fw-semibold d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span><i class="bi bi-boxes me-1"></i>Inventory position</span>
+    {% if not scope_centre_id %}
+    <form class="d-flex gap-2" method="get" action="{{ url_for('nutrition.index') }}">
+      <select class="form-select form-select-sm" name="centre" onchange="this.form.submit()">
+        <option value="">All centres</option>
+        {% for centre in centres %}
+        <option value="{{ centre.id }}" {{ 'selected' if centre_raw == centre.id|string }}>{{ centre.name }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    {% endif %}
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Centre</th>
+          <th>Item</th>
+          <th>Opening</th>
+          <th>Received</th>
+          <th>Distributed</th>
+          <th>Available</th>
+          <th>Minimum</th>
+          <th>Status</th>
+          <th>Expiry</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in inventory %}
+        <tr>
+          <td class="small">{{ row.centre.name }}</td>
+          <td class="small fw-semibold">{{ row.item.name }}</td>
+          <td class="small">{{ row.opening_stock }}</td>
+          <td class="small">{{ row.received_quantity }}</td>
+          <td class="small">{{ row.distributed_quantity }}</td>
+          <td class="small fw-semibold">{{ row.available_quantity }} {{ row.unit }}</td>
+          <td class="small">{{ row.minimum_stock }}</td>
+          <td>
+            {% if row.minimum_stock and row.minimum_stock > 0 and row.is_low_stock %}
+              <span class="badge text-bg-danger">Low</span>
+            {% else %}
+              <span class="badge text-bg-success">OK</span>
+            {% endif %}
+          </td>
+          <td class="small">{{ row.expiry_date.strftime('%d %b %Y') if row.expiry_date else '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="text-center text-muted py-4">No inventory recorded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<p class="text-muted small mt-3 mb-0">
+  <i class="bi bi-info-circle me-1"></i>
+  Current stock is calculated as <strong>Opening + Received − Distributed</strong>.
+  A row is flagged low when a configured minimum (&gt; 0) is reached, and a
+  scoped nutrition-stock alert is raised.
+</p>
+{% endblock %}

@@ -14,6 +14,13 @@
       </a>
     </li>
 
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('nutrition.') }}"
+         href="{{ url_for('nutrition.index') }}">
+        <i class="bi bi-basket me-2"></i> Nutrition
+      </a>
+    </li>
+
     {% if current_user.role in [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.OFFICER] %}
     <li class="nav-item">
       <a class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('centres.') }}"

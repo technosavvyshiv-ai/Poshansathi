@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Distribution History{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <div>
+    <h1 class="h3 mb-1"><i class="bi bi-clock-history me-2"></i>Nutrition distribution history</h1>
+    <p class="text-muted small mb-0">Stock issued to beneficiaries.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('nutrition.index') }}">
+      <i class="bi bi-arrow-left me-1"></i>Nutrition
+    </a>
+    {% if can_write %}
+    <a class="btn btn-success btn-sm" href="{{ url_for('nutrition.distribution_create') }}">
+      <i class="bi bi-plus-circle me-1"></i>Record distribution
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+  <div class="card-body">
+    <form class="row g-2 align-items-end" method="get" action="{{ url_for('nutrition.distributions') }}">
+      {% if not scope_centre_id %}
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Centre</label>
+        <select class="form-select form-select-sm" name="centre">
+          <option value="">All centres</option>
+          {% for centre in centres %}
+          <option value="{{ centre.id }}" {{ 'selected' if centre_raw == centre.id|string }}>{{ centre.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Item</label>
+        <select class="form-select form-select-sm" name="item">
+          <option value="">All items</option>
+          {% for item in items %}
+          <option value="{{ item.id }}" {{ 'selected' if item_raw == item.id|string }}>{{ item.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Beneficiary ID</label>
+        <input type="number" min="1" class="form-control form-control-sm" name="beneficiary"
+               value="{{ beneficiary_raw }}" placeholder="Optional">
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-outline-primary btn-sm w-100" type="submit">
+          <i class="bi bi-funnel me-1"></i>Filter
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Date</th>
+          <th>Beneficiary</th>
+          <th>Centre</th>
+          <th>Item</th>
+          <th>Quantity</th>
+          <th>Worker</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in distributions %}
+        <tr>
+          <td class="small">{{ row.distribution_date.strftime('%d %b %Y') }}</td>
+          <td class="small">
+            {% if row.beneficiary %}
+            <a class="text-decoration-none"
+               href="{{ url_for('nutrition.beneficiary_history', beneficiary_id=row.beneficiary_id) }}">
+              {{ row.beneficiary.full_name }}
+            </a>
+            {% else %}—{% endif %}
+          </td>
+          <td class="small">{{ row.centre.name if row.centre else '—' }}</td>
+          <td class="small fw-semibold">{{ row.item.name if row.item else '—' }}</td>
+          <td class="small">{{ row.quantity }} {{ row.item.unit if row.item else '' }}</td>
+          <td class="small">{{ row.worker.full_name if row.worker else '—' }}</td>
+          <td class="small text-muted">{{ row.notes or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-center text-muted py-5">No distributions found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

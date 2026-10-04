@@ -568,6 +568,99 @@ def validate_maternal_health_fields(form, mother):
     return cleaned, errors
 
 
+# ---------------------------------------------------------------------------
+# Nutrition / inventory validation (Phase 7)
+# ---------------------------------------------------------------------------
+def validate_nutrition_item_fields(form):
+    """Validate a nutrition item catalogue entry."""
+    errors: dict[str, str] = {}
+    cleaned = {
+        "name": _parse_str(
+            form, "name", errors, required=True, max_len=150, label="Item name"
+        ),
+        "category": _parse_str(
+            form, "category", errors, max_len=80, label="Category"
+        ),
+        "unit": _parse_str(
+            form, "unit", errors, required=True, max_len=30, label="Unit"
+        ),
+        "description": _parse_str(
+            form, "description", errors, max_len=1000, label="Description"
+        ),
+        "is_active": _get(form, "is_active") not in ("", "0", "false", "off", "False"),
+    }
+    return cleaned, errors
+
+
+def validate_stock_received_fields(form):
+    """Validate a stock-received entry for one inventory row.
+
+    Quantities are broad data-integrity guards, not clinical/ration advice.
+    """
+    errors: dict[str, str] = {}
+    cleaned = {
+        "quantity": _parse_decimal(
+            form, "quantity", errors, minimum=Decimal("0.01"),
+            maximum=Decimal("1000000"), label="Received quantity",
+        ),
+        "received_date": _parse_date(
+            form, "received_date", errors, not_future=True, label="Received date"
+        ),
+        "expiry_date": _parse_date(
+            form, "expiry_date", errors, label="Expiry date"
+        ),
+        "minimum_stock": _parse_decimal(
+            form, "minimum_stock", errors, minimum=Decimal("0"),
+            maximum=Decimal("1000000"), label="Minimum stock",
+        ),
+        "unit": _parse_str(form, "unit", errors, max_len=30, label="Unit"),
+    }
+
+    if cleaned.get("quantity") is None and "quantity" not in errors:
+        errors["quantity"] = "Received quantity is required."
+
+    received = cleaned.get("received_date")
+    expiry = cleaned.get("expiry_date")
+    if received and expiry and expiry < received:
+        errors["expiry_date"] = (
+            "Expiry date cannot be before the received date."
+        )
+
+    return cleaned, errors
+
+
+def validate_nutrition_distribution_fields(form):
+    """Validate a nutrition distribution entry.
+
+    Stock availability (quantity cannot exceed current stock) is enforced by
+    :mod:`app.services.nutrition_service`, which has access to the inventory
+    row.
+    """
+    errors: dict[str, str] = {}
+    cleaned = {
+        "item_id": _parse_int(
+            form, "item_id", errors, minimum=1, label="Nutrition item"
+        ),
+        "quantity": _parse_decimal(
+            form, "quantity", errors, minimum=Decimal("0.01"),
+            maximum=Decimal("1000000"), label="Quantity",
+        ),
+        "distribution_date": _parse_date(
+            form, "distribution_date", errors, required=True, not_future=True,
+            label="Distribution date",
+        ),
+        "notes": _parse_str(form, "notes", errors, max_len=1000, label="Notes"),
+    }
+
+    if cleaned.get("item_id") is None and "item_id" not in errors:
+        errors["item_id"] = "Please select a nutrition item."
+
+    if cleaned.get("quantity") is None and "quantity" not in errors:
+        errors["quantity"] = "Quantity is required."
+
+    return cleaned, errors
+
+
 __all__ = [
     "BLOOD_GROUPS",
     "MAX_CHILD_AGE_YEARS",
@@ -578,5 +671,8 @@ __all__ = [
     "validate_mother_fields",
     "validate_centre_fields",
     "validate_growth_fields",
+    "validate_nutrition_distribution_fields",
+    "validate_nutrition_item_fields",
+    "validate_stock_received_fields",
     "validate_vaccination_fields",
 ]

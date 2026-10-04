@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Record Stock{% endblock %}
+
+{% macro field_error(errors, name) %}
+  {% if errors.get(name) %}
+    <div class="invalid-feedback d-block">{{ errors.get(name) }}</div>
+  {% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <h1 class="h3 mb-0"><i class="bi bi-box-arrow-in-down me-2"></i>Record stock received</h1>
+  <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('nutrition.index') }}">
+    <i class="bi bi-arrow-left me-1"></i>Back to nutrition
+  </a>
+</div>
+
+<form method="post" novalidate action="{{ url_for('nutrition.stock_new') }}">
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white fw-semibold">Goods received</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="centre_id" class="form-label">
+                Centre {% if not scope_centre_id %}<span class="text-danger">*</span>{% endif %}
+              </label>
+              {% if scope_centre_id %}
+              <input type="text" class="form-control" value="{{ current_user.centre.name if current_user.centre else '—' }}" disabled>
+              {% else %}
+              <select class="form-select {{ 'is-invalid' if errors.get('centre_id') }}"
+                      id="centre_id" name="centre_id" required>
+                <option value="">Select a centre…</option>
+                {% for centre in centres %}
+                <option value="{{ centre.id }}" {{ 'selected' if form.get('centre_id') == centre.id|string }}>{{ centre.name }}</option>
+                {% endfor %}
+              </select>
+              {{ field_error(errors, 'centre_id') }}
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label for="item_id" class="form-label">Item <span class="text-danger">*</span></label>
+              <select class="form-select {{ 'is-invalid' if errors.get('item_id') }}"
+                      id="item_id" name="item_id" required>
+                <option value="">Select an item…</option>
+                {% for item in items %}
+                <option value="{{ item.id }}" {{ 'selected' if form.get('item_id') == item.id|string }}>{{ item.name }}</option>
+                {% endfor %}
+              </select>
+              {{ field_error(errors, 'item_id') }}
+            </div>
+            <div class="col-md-4">
+              <label for="quantity" class="form-label">Quantity received <span class="text-danger">*</span></label>
+              <input type="number" step="0.01" min="0.01"
+                     class="form-control {{ 'is-invalid' if errors.get('quantity') }}"
+                     id="quantity" name="quantity" value="{{ form.get('quantity', '') }}" required>
+              {{ field_error(errors, 'quantity') }}
+            </div>
+            <div class="col-md-4">
+              <label for="unit" class="form-label">Unit</label>
+              <input type="text" class="form-control {{ 'is-invalid' if errors.get('unit') }}"
+                     id="unit" name="unit" maxlength="30" value="{{ form.get('unit', '') }}"
+                     placeholder="Defaults to the item unit">
+              {{ field_error(errors, 'unit') }}
+            </div>
+            <div class="col-md-4">
+              <label for="minimum_stock" class="form-label">Minimum stock</label>
+              <input type="number" step="0.01" min="0"
+                     class="form-control {{ 'is-invalid' if errors.get('minimum_stock') }}"
+                     id="minimum_stock" name="minimum_stock" value="{{ form.get('minimum_stock', '') }}">
+              {{ field_error(errors, 'minimum_stock') }}
+            </div>
+            <div class="col-md-6">
+              <label for="received_date" class="form-label">Received date</label>
+              <input type="date" class="form-control {{ 'is-invalid' if errors.get('received_date') }}"
+                     id="received_date" name="received_date" value="{{ form.get('received_date', '') }}">
+              {{ field_error(errors, 'received_date') }}
+            </div>
+            <div class="col-md-6">
+              <label for="expiry_date" class="form-label">Expiry date</label>
+              <input type="date" class="form-control {{ 'is-invalid' if errors.get('expiry_date') }}"
+                     id="expiry_date" name="expiry_date" value="{{ form.get('expiry_date', '') }}">
+              {{ field_error(errors, 'expiry_date') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card shadow-sm mb-3 border-warning">
+        <div class="card-body">
+          <h2 class="h6"><i class="bi bi-info-circle me-1"></i>Stock rule</h2>
+          <p class="small text-muted mb-0">
+            Received quantity is added to the centre's stock. A configured
+            minimum (&gt; 0) raises a low-stock alert when reached.
+          </p>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-success w-100">
+        <i class="bi bi-check2-circle me-1"></i>Save stock entry
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}
