@@ -488,13 +488,56 @@ def test_beneficiary_detail_links_to_schemes(
     assert f"/beneficiaries/{child.beneficiary_id}/schemes".encode() in response.data
 
 
+# ---------------------------------------------------------------------------
+# Inactive-beneficiary protection (Phase 13 regression)
+# ---------------------------------------------------------------------------
+def test_link_for_inactive_beneficiary_rejected(
+    db, centre, make_child, make_scheme
+):
+    child = make_child(centre)
+    scheme = make_scheme()
+    child.beneficiary.status = RecordStatus.INACTIVE
+    db.session.commit()
+
+    with pytest.raises(ValidationError):
+        scheme_service.link_scheme(
+            child.beneficiary,
+            scheme,
+            {
+                "scheme_id": str(scheme.id),
+                "status": SchemeStatus.ELIGIBLE.value,
+            },
+        )
+
+    assert BeneficiaryScheme.query.count() == 0
+
+
+def test_link_inactive_beneficiary_rejected_via_route(
+    client, db, centre, make_user, make_child, make_scheme
+):
+    child = make_child(centre)
+    scheme = make_scheme()
+    child.beneficiary.status = RecordStatus.INACTIVE
+    db.session.commit()
+    make_user("aww_scheme", role=UserRole.AWW, centre=centre)
+    login(client, "aww_scheme")
+
+    response = client.post(
+        f"/beneficiaries/{child.beneficiary_id}/schemes/link",
+        data={"scheme_id": str(scheme.id), "status": SchemeStatus.ELIGIBLE.value},
+    )
+
+    assert response.status_code == 302
+    assert BeneficiaryScheme.query.count() == 0
+
+
 def test_full_scheme_workflow(client, db, centre, make_user, make_child):
     """ADMIN creates a scheme; AWW links, updates and unlinks for a child."""
     child = make_child(centre)
     make_user("admin_scheme", role=UserRole.ADMIN)
     make_user("aww_scheme", role=UserRole.AWW, centre=centre)
 
-    # ADMIN creates the scheme.
+    # ADMIN creates the scheme, then switches to the AWW.
     login(client, "admin_scheme")
     client.post(
         "/schemes/new",
@@ -503,6 +546,7 @@ def test_full_scheme_workflow(client, db, centre, make_user, make_child):
     scheme = WelfareScheme.query.filter_by(name="Workflow Created Scheme").one()
 
     # AWW sees it as potentially relevant and links the child.
+    client.post("/logout")
     login(client, "aww_scheme")
     page = client.get(f"/beneficiaries/{child.beneficiary_id}/schemes")
     assert b"Workflow Created Scheme" in page.data

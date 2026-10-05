@@ -20,6 +20,8 @@ def test_healthz(client):
     payload = response.get_json()
     assert payload["status"] == "ok"
     assert payload["app"] == "PoshanSathi"
+    # Tracks the most recently completed phase (Phase 11 — Dashboards).
+    assert payload["phase"] == "11"
 
 
 def test_unknown_route_returns_404(client):

@@ -610,6 +610,102 @@ def test_inactive_worker_rejected(client, db, centre, make_user, make_child):
 
 
 # ---------------------------------------------------------------------------
+# Backend validation: visit state machine (Scheduled → Completed)
+# ---------------------------------------------------------------------------
+def test_cannot_complete_a_cancelled_visit(
+    client, db, centre, make_user, make_child, make_visit
+):
+    child = make_child(centre)
+    visit = make_visit(child.beneficiary, centre, status=VisitStatus.CANCELLED)
+    make_user("aww_visit", role=UserRole.AWW, centre=centre)
+    login(client, "aww_visit")
+
+    response = client.post(
+        f"/visits/{visit.id}/complete",
+        data={"completed_date": date.today().isoformat()},
+    )
+
+    assert response.status_code == 302
+    refreshed = db.session.get(HomeVisit, visit.id)
+    assert refreshed.status == VisitStatus.CANCELLED
+    assert refreshed.completed_date is None
+
+
+def test_service_rejects_completing_a_cancelled_visit(
+    db, centre, make_child, make_visit
+):
+    child = make_child(centre)
+    visit = make_visit(child.beneficiary, centre, status=VisitStatus.CANCELLED)
+
+    with pytest.raises(ValidationError) as excinfo:
+        visit_service.complete_visit(
+            visit, {"completed_date": date.today().isoformat()}
+        )
+
+    assert "visit" in excinfo.value.errors
+    assert visit.status == VisitStatus.CANCELLED
+
+
+def test_cannot_cancel_a_completed_visit(
+    client, db, centre, make_user, make_child, make_visit
+):
+    child = make_child(centre)
+    visit = make_visit(
+        child.beneficiary,
+        centre,
+        status=VisitStatus.COMPLETED,
+        completed_date=date.today(),
+    )
+    make_user("aww_visit", role=UserRole.AWW, centre=centre)
+    login(client, "aww_visit")
+
+    response = client.post(f"/visits/{visit.id}/cancel")
+
+    assert response.status_code == 302
+    refreshed = db.session.get(HomeVisit, visit.id)
+    assert refreshed.status == VisitStatus.COMPLETED
+    assert refreshed.completed_date == date.today()
+
+
+def test_service_rejects_cancelling_a_completed_visit(
+    db, centre, make_child, make_visit
+):
+    child = make_child(centre)
+    visit = make_visit(
+        child.beneficiary,
+        centre,
+        status=VisitStatus.COMPLETED,
+        completed_date=date.today(),
+    )
+
+    with pytest.raises(ValidationError):
+        visit_service.cancel_visit(visit)
+
+    assert visit.status == VisitStatus.COMPLETED
+
+
+def test_recompleting_a_completed_visit_does_not_backdate(
+    db, centre, make_child, make_visit
+):
+    """A completed visit cannot be re-completed with an arbitrary date."""
+    child = make_child(centre)
+    completed = date.today() - timedelta(days=2)
+    visit = make_visit(
+        child.beneficiary,
+        centre,
+        status=VisitStatus.COMPLETED,
+        completed_date=completed,
+    )
+
+    with pytest.raises(ValidationError):
+        visit_service.complete_visit(
+            visit, {"completed_date": "2020-01-01"}
+        )
+
+    assert visit.completed_date == completed
+
+
+# ---------------------------------------------------------------------------
 # Beneficiary profile integration
 # ---------------------------------------------------------------------------
 def test_beneficiary_profile_links_to_visits_and_alerts(

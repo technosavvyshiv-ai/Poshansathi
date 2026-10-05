@@ -63,6 +63,28 @@ def _configure_logging(app: Flask) -> None:
 def _register_extensions(app: Flask) -> None:
     """Bind extension instances to the application."""
     db.init_app(app)
+    _register_sqlite_fk_enforcement()
+
+
+def _register_sqlite_fk_enforcement() -> None:
+    """Enforce foreign keys on SQLite connections (test/dev databases).
+
+    Production runs on MySQL where ``ON DELETE`` clauses are enforced by the
+    server.  SQLite ignores them unless ``PRAGMA foreign_keys = ON`` is set per
+    connection, so without this the test suite could never detect FK
+    violations or verify cascade behaviour.
+    """
+    from sqlalchemy import event
+    from sqlalchemy.engine import Engine
+
+    @event.listens_for(Engine, "connect")
+    def _set_sqlite_pragma(dbapi_connection, _connection_record):
+        module = type(dbapi_connection).__module__ or ""
+        if not module.startswith("sqlite3"):
+            return
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
 
 def _register_models() -> None:

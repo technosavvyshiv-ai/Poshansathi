@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% from 'components/dashboard_cards.html' import metric_card, stat_card %}
+{% block title %}AWW Dashboard{% endblock %}
+
+{% block content %}
+<div class="p-4 mb-4 rounded-3 app-hero">
+  <h1 class="h3 fw-bold mb-1">
+    <i class="bi bi-speedometer2 me-2"></i>Welcome, {{ current_user.full_name }}
+  </h1>
+  <p class="mb-0 text-muted">
+    Anganwadi Worker &middot; {{ centre.name if centre else 'All centres' }}
+    &middot; metrics for the last 30 days
+  </p>
+</div>
+
+<div class="row g-3 mb-3">
+  {{ metric_card('Children', beneficiaries.children, 'bi-emoji-smile', href=url_for('beneficiaries.index', type='CHILD')) }}
+  {{ metric_card('Pregnant women', beneficiaries.pregnant, 'bi-person-heart', href=url_for('beneficiaries.index', type='PREGNANT_WOMAN')) }}
+  {{ metric_card('Lactating mothers', beneficiaries.lactating, 'bi-person-hearts', href=url_for('beneficiaries.index', type='LACTATING_MOTHER')) }}
+  {{ metric_card('Open alerts', alerts.ACTIVE, 'bi-exclamation-triangle', tone=('text-danger' if alerts.ACTIVE else ''), href=url_for('alerts.index')) }}
+  {{ metric_card('Pending visits', visits.PENDING, 'bi-house-heart', href=url_for('visits.index', status='SCHEDULED')) }}
+  {{ metric_card('Upcoming vaccinations', vaccination.upcoming, 'bi-shield-plus', sub='next 30 days') }}
+</div>
+
+<div class="row g-3 mb-3">
+  {{ stat_card('Attendance (30d)', attendance.percentage ~ '%' if attendance.percentage is not none else '—', 'bi-calendar2-check', tone=('text-success' if (attendance.percentage or 0) >= 75 else 'text-warning')) }}
+  {{ stat_card('Low stock items', nutrition.low_stock_count, 'bi-basket', tone=('text-danger' if nutrition.low_stock_count else 'text-success')) }}
+  {{ stat_card('Distributions (30d)', nutrition.distribution_count, 'bi-box-arrow-up') }}
+  {{ stat_card('Scheme links', schemes.TOTAL, 'bi-award') }}
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-8">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-bar-chart me-1"></i>Daily attendance (last 14 days)
+      </div>
+      <div class="card-body">
+        <div style="height: 260px;">
+          <canvas id="attendanceChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-pie-chart me-1"></i>Vaccination status
+      </div>
+      <div class="card-body">
+        <div style="height: 260px;">
+          <canvas id="vaccinationChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-graph-up-arrow me-1"></i>Recent registrations
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr><th>Name</th><th>Type</th><th>Registered</th></tr>
+          </thead>
+          <tbody>
+            {% for person in recent %}
+            <tr>
+              <td class="small">
+                <a class="text-decoration-none" href="{{ url_for('beneficiaries.detail', beneficiary_id=person.id) }}">
+                  {{ person.full_name }}
+                </a>
+              </td>
+              <td class="small">{{ person.beneficiary_type.value.replace('_', ' ').title() }}</td>
+              <td class="small">{{ person.registration_date.strftime('%d %b %Y') if person.registration_date else '—' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="text-center text-muted py-4">No recent registrations.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-shield-plus me-1"></i>Upcoming vaccinations (30 days)
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr><th>Child</th><th>Vaccine</th><th>Dose</th><th>Due</th></tr>
+          </thead>
+          <tbody>
+            {% for item in upcoming_vaccinations %}
+            <tr>
+              <td class="small">{{ item.child.beneficiary.full_name if item.child and item.child.beneficiary else '—' }}</td>
+              <td class="small fw-semibold">{{ item.vaccine_name }}</td>
+              <td class="small">{{ item.dose_number }}</td>
+              <td class="small">{{ item.scheduled_date.strftime('%d %b %Y') if item.scheduled_date else '—' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-4">No vaccinations scheduled in this window.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-exclamation-triangle me-1"></i>Open alerts
+      </div>
+      <div class="list-group list-group-flush">
+        {% for alert in open_alerts %}
+        <a class="list-group-item list-group-item-action small" href="{{ url_for('alerts.detail', alert_id=alert.id) }}">
+          <span class="badge text-bg-secondary me-1">{{ alert.severity.value.title() }}</span>
+          {{ alert.message }}
+        </a>
+        {% else %}
+        <div class="list-group-item text-muted small py-4 text-center">No open alerts — nothing needs follow-up.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-basket me-1"></i>Nutrition stock status
+      </div>
+      <div class="card-body">
+        <div class="row text-center g-2 mb-3">
+          <div class="col-4 border rounded py-2">
+            <div class="small text-muted">Inventory rows</div>
+            <div class="h5 mb-0">{{ nutrition.inventory_rows }}</div>
+          </div>
+          <div class="col-4 border rounded py-2">
+            <div class="small text-muted">Low stock</div>
+            <div class="h5 mb-0 {{ 'text-danger' if nutrition.low_stock_count else 'text-success' }}">{{ nutrition.low_stock_count }}</div>
+          </div>
+          <div class="col-4 border rounded py-2">
+            <div class="small text-muted">Distributed (30d)</div>
+            <div class="h5 mb-0">{{ nutrition.distributed_quantity }}</div>
+          </div>
+        </div>
+        {% if nutrition.low_stock_items %}
+        <ul class="list-group list-group-flush">
+          {% for row in nutrition.low_stock_items %}
+          <li class="list-group-item d-flex justify-content-between small">
+            <span class="fw-semibold">{{ row.item.name if row.item else '—' }}</span>
+            <span>
+              <span class="badge text-bg-danger">Low</span>
+              {{ row.available_quantity }} {{ row.unit }}
+            </span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted small text-center mb-0">All configured stock levels are OK.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script id="attendance-chart-data" type="application/json">{{ attendance_trend | tojson }}</script>
+<script id="vaccination-chart-data" type="application/json">{{ vaccination.breakdown | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

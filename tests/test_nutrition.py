@@ -27,6 +27,7 @@ from app.utils.constants import (
     RecordStatus,
     UserRole,
 )
+from app.utils.validators import ValidationError
 
 PASSWORD = "password123"
 
@@ -445,6 +446,55 @@ def test_distribution_history_page(
     assert b"Nutrition distribution history" in response.data
     assert b"Groundnut Chikki" in response.data
     assert b"Nutrition Beneficiary" in response.data
+
+
+# ---------------------------------------------------------------------------
+# Inactive-beneficiary protection (Phase 13 regression)
+# ---------------------------------------------------------------------------
+def test_distribution_for_inactive_beneficiary_rejected(
+    db, centre, make_item, make_beneficiary, make_inventory
+):
+    item = make_item()
+    beneficiary = make_beneficiary(centre)
+    make_inventory(centre, item, received=100)
+    beneficiary.status = RecordStatus.INACTIVE
+    db.session.commit()
+
+    with pytest.raises(ValidationError):
+        nutrition_service.record_distribution(
+            beneficiary,
+            item,
+            {
+                "item_id": str(item.id),
+                "quantity": "5",
+                "distribution_date": date.today().isoformat(),
+            },
+        )
+
+    assert NutritionDistribution.query.count() == 0
+    inventory = Inventory.query.filter_by(centre_id=centre.id).one()
+    assert inventory.distributed_quantity == 0  # stock untouched
+
+
+def test_inactive_beneficiary_rejected_via_route(
+    client, db, centre, make_user, make_item, make_beneficiary, make_inventory
+):
+    item = make_item()
+    beneficiary = make_beneficiary(centre)
+    make_inventory(centre, item, received=100)
+    beneficiary.status = RecordStatus.INACTIVE
+    db.session.commit()
+    make_user("aww_nut", role=UserRole.AWW, centre=centre)
+    login(client, "aww_nut")
+
+    response = client.post(
+        "/nutrition/distributions/new",
+        data=distribution_form(item.id, beneficiary.id),
+    )
+
+    assert response.status_code == 400
+    assert b"cannot receive" in response.data
+    assert NutritionDistribution.query.count() == 0
 
 
 def test_beneficiary_nutrition_history(

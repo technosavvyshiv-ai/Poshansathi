@@ -23,7 +23,7 @@ from sqlalchemy import or_
 
 from app.extensions import db
 from app.models import Beneficiary, BeneficiaryScheme, WelfareScheme
-from app.utils.constants import SchemeStatus
+from app.utils.constants import RecordStatus, SchemeStatus
 from app.utils.growth_rules import age_in_months
 from app.utils.helpers import age_years
 from app.utils.scheme_rules import BeneficiaryProfile, evaluate
@@ -178,7 +178,15 @@ def beneficiaries_for_scheme(
 
 
 def link_scheme(beneficiary, scheme, form) -> BeneficiaryScheme:
-    """Validate and create a beneficiary <-> scheme association."""
+    """Validate and create a beneficiary <-> scheme association.
+
+    A deactivated beneficiary cannot be linked (matching the home-visit rule).
+    """
+    if beneficiary.status != RecordStatus.ACTIVE:
+        raise ValidationError(
+            {"beneficiary_id": "This beneficiary is inactive and cannot be linked."}
+        )
+
     cleaned, errors = validate_beneficiary_scheme_fields(form)
     if errors:
         raise ValidationError(errors)

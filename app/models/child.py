@@ -43,8 +43,10 @@ class Child(TimestampMixin, db.Model):
     attendance_records = db.relationship(
         "Attendance", back_populates="child", cascade="all, delete-orphan"
     )
+    # ``passive_deletes`` defers to the database's ``ON DELETE CASCADE`` so a
+    # deleted child/beneficiary removes its alerts instead of orphaning them.
     alerts = db.relationship(
-        "Alert", back_populates="child", cascade="save-update, merge"
+        "Alert", back_populates="child", passive_deletes=True
     )
 
     def __repr__(self) -> str:  # pragma: no cover - debugging aid

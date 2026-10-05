@@ -32,7 +32,7 @@ from app.models import (
     NutritionItem,
 )
 from app.services import alert_service
-from app.utils.constants import AlertType
+from app.utils.constants import AlertType, RecordStatus
 from app.utils.validators import (
     ValidationError,
     validate_nutrition_distribution_fields,
@@ -244,11 +244,23 @@ def record_distribution(
     """Validate and record a distribution, decrementing available stock.
 
     The distribution is always recorded at the beneficiary's centre.  A
-    distribution larger than the current available stock is rejected.
+    distribution larger than the current available stock is rejected, and a
+    deactivated beneficiary is rejected (matching the home-visit rule) so
+    soft-deactivated records cannot move stock via crafted requests.
     """
     cleaned, errors = validate_nutrition_distribution_fields(form)
     if errors:
         raise ValidationError(errors)
+
+    if beneficiary.status != RecordStatus.ACTIVE:
+        raise ValidationError(
+            {
+                "beneficiary_id": (
+                    "This beneficiary is inactive and cannot receive "
+                    "distributions."
+                )
+            }
+        )
 
     centre = beneficiary.centre
     inventory = inventory_row(centre.id, item.id)

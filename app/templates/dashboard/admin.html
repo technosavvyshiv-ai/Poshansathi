@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% from 'components/dashboard_cards.html' import metric_card, stat_card %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="p-4 mb-4 rounded-3 app-hero">
+  <h1 class="h3 fw-bold mb-1">
+    <i class="bi bi-speedometer2 me-2"></i>Welcome, {{ current_user.full_name }}
+  </h1>
+  <p class="mb-0 text-muted">
+    Administrator overview &middot; whole-system metrics from the database
+  </p>
+</div>
+
+<div class="row g-3 mb-3">
+  {{ metric_card('Active centres', total_centres.active, 'bi-geo-alt', sub='of ' ~ total_centres.total, href=url_for('centres.index')) }}
+  {{ metric_card('Active users', users.TOTAL, 'bi-people', href=url_for('admin.index'), sub=(users.AWW ~ ' workers · ' ~ users.SUPERVISOR ~ ' supervisors')) }}
+  {{ metric_card('Beneficiaries', beneficiaries.total, 'bi-people-fill', href=url_for('beneficiaries.index'), sub=(beneficiaries.active ~ ' active')) }}
+  {{ metric_card('Open alerts', alerts.ACTIVE, 'bi-exclamation-triangle', tone=('text-danger' if alerts.ACTIVE else ''), href=url_for('alerts.index')) }}
+  {{ metric_card('Pending visits', visits.PENDING, 'bi-house-heart', href=url_for('visits.index', status='SCHEDULED')) }}
+  {{ metric_card('Active schemes', schemes.ACTIVE_SCHEMES, 'bi-award', href=url_for('schemes.index'), sub=(schemes.ENROLLED ~ ' enrolments')) }}
+</div>
+
+<div class="row g-3 mb-3">
+  {{ stat_card('Children', beneficiaries.children, 'bi-emoji-smile') }}
+  {{ stat_card('Mothers', beneficiaries.mothers, 'bi-person-heart', sub=(beneficiaries.pregnant ~ ' pregnant · ' ~ beneficiaries.lactating ~ ' lactating')) }}
+  {{ stat_card('Vaccination coverage', vaccination.coverage ~ '%' if vaccination.coverage is not none else '—', 'bi-shield-plus', tone='text-success') }}
+  {{ stat_card('Alert resolution', alerts.RESOLUTION_RATE ~ '%' if alerts.RESOLUTION_RATE is not none else '—', 'bi-check2-circle', tone='text-success') }}
+</div>
+
+<div class="card shadow-sm mb-3">
+  <div class="card-header bg-white fw-semibold">
+    <i class="bi bi-bar-chart-line me-1"></i>Centre comparison — children and mothers
+  </div>
+  <div class="card-body">
+    <div style="height: 280px;">
+      <canvas id="centreChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-7">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-table me-1"></i>Centre comparison
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Centre</th>
+              <th class="text-end">Children</th>
+              <th class="text-end">Mothers</th>
+              <th class="text-end">Open alerts</th>
+              <th class="text-end">Coverage</th>
+              <th class="text-end">Pending visits</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in comparison %}
+            <tr>
+              <td class="small">
+                <a class="text-decoration-none fw-semibold" href="{{ url_for('centres.detail', centre_id=row.centre.id) }}">
+                  {{ row.centre.name }}
+                </a>
+              </td>
+              <td class="small text-end">{{ row.children }}</td>
+              <td class="small text-end">{{ row.mothers }}</td>
+              <td class="small text-end {{ 'text-danger fw-semibold' if row.open_alerts }}">{{ row.open_alerts }}</td>
+              <td class="small text-end">{{ row.vaccination_coverage ~ '%' if row.vaccination_coverage is not none else '—' }}</td>
+              <td class="small text-end">{{ row.pending_visits }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-muted py-5">No active centres.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-person-gear me-1"></i>Users by role (active)
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr><th>Role</th><th class="text-end">Users</th></tr>
+          </thead>
+          <tbody>
+            {% for role_value, label in [('ADMIN','Administrator'),('AWW','Anganwadi workers'),('SUPERVISOR','Supervisors'),('OFFICER','Programme officers')] %}
+            <tr>
+              <td class="small">{{ label }}</td>
+              <td class="small text-end fw-semibold">{{ users[role_value] }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="table-light">
+              <td class="small fw-semibold">Total</td>
+              <td class="small text-end fw-semibold">{{ users.TOTAL }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header bg-white fw-semibold">
+    <i class="bi bi-clock-history me-1"></i>Recent registrations
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr><th>Name</th><th>Type</th><th>Centre</th><th>Registered</th></tr>
+      </thead>
+      <tbody>
+        {% for person in recent %}
+        <tr>
+          <td class="small">
+            <a class="text-decoration-none" href="{{ url_for('beneficiaries.detail', beneficiary_id=person.id) }}">
+              {{ person.full_name }}
+            </a>
+          </td>
+          <td class="small">{{ person.beneficiary_type.value.replace('_', ' ').title() }}</td>
+          <td class="small">{{ person.centre.name if person.centre else '—' }}</td>
+          <td class="small">{{ person.registration_date.strftime('%d %b %Y') if person.registration_date else '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-muted py-4">No recent registrations.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script id="centre-chart-data" type="application/json">{{ comparison_chart | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

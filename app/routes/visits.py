@@ -353,8 +353,12 @@ def complete(visit_id):
 def cancel(visit_id):
     """Cancel a visit."""
     visit = _get_visit(visit_id)
-    visit_service.cancel_visit(visit, actor=current_user())
-    flash("Home visit cancelled.", "info")
+    try:
+        visit_service.cancel_visit(visit, actor=current_user())
+    except ValidationError as exc:
+        flash(next(iter(exc.errors.values())), "danger")
+    else:
+        flash("Home visit cancelled.", "info")
     return redirect(url_for("visits.detail", visit_id=visit.id))
 
 

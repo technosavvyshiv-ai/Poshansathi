@@ -52,8 +52,13 @@ class Alert(TimestampMixin, db.Model):
     resolution_notes = db.Column(db.Text)
 
     # Relationships
-    beneficiary = db.relationship("Beneficiary", back_populates="alerts")
-    child = db.relationship("Child", back_populates="alerts")
+    # ``passive_deletes`` lets the database's ``ON DELETE CASCADE`` remove
+    # alerts when their beneficiary/child is deleted.  Without it SQLAlchemy
+    # would NULL the FK columns first, silently orphaning the alert rows.
+    beneficiary = db.relationship(
+        "Beneficiary", back_populates="alerts", passive_deletes=True
+    )
+    child = db.relationship("Child", back_populates="alerts", passive_deletes=True)
     assigned_to = db.relationship("User", foreign_keys=[assigned_to_id])
     created_by = db.relationship("User", foreign_keys=[created_by_id])
 

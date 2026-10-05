@@ -57,6 +57,30 @@ def test_login_page_redirects_when_authenticated(client, user_factory):
     assert response.headers["Location"].endswith("/dashboard")
 
 
+def test_login_while_authenticated_does_not_switch_accounts(
+    client, user_factory
+):
+    """An authenticated POST /login never re-authenticates.
+
+    The route deliberately skips the form when a session exists (see its
+    docstring), so switching accounts requires an explicit logout first.
+    Multi-user test flows must follow the same rule.
+    """
+    first = user_factory("first_user")
+    second = user_factory("second_user")
+    _login(client, "first_user")
+
+    response = client.post(
+        "/login",
+        data={"username": "second_user", "password": PASSWORD},
+    )
+
+    assert response.status_code == 302
+    with client.session_transaction() as sess:
+        assert sess["user_id"] == first.id  # unchanged
+        assert sess["user_id"] != second.id
+
+
 # ---------------------------------------------------------------------------
 # Login
 # ---------------------------------------------------------------------------

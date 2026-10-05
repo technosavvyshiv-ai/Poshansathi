@@ -16,6 +16,7 @@ from app.models import (
     GrowthRecord,
     NutritionItem,
     User,
+    Vaccination,
 )
 from app.utils.constants import (
     AttendanceStatus,
@@ -184,3 +185,146 @@ def test_seed_database_populates_foundation(app, db):
     second = seed_database()
     assert second.skipped is True
     assert db.session.query(AnganwadiCentre).count() == 5
+
+
+# ---------------------------------------------------------------------------
+# Phase 13: constraints / referential integrity regression tests
+# ---------------------------------------------------------------------------
+def _centre_with_child(db, code, full_name="Constraint Child"):
+    centre = AnganwadiCentre(name=f"Test Centre {code}", code=code)
+    db.session.add(centre)
+    db.session.flush()
+    beneficiary = Beneficiary(
+        centre=centre,
+        beneficiary_type=BeneficiaryType.CHILD,
+        full_name=full_name,
+        status=RecordStatus.ACTIVE,
+    )
+    child = Child(beneficiary=beneficiary)
+    db.session.add(child)
+    db.session.flush()
+    return centre, beneficiary, child
+
+
+def test_vaccination_unique_child_vaccine_dose(db):
+    _centre, _ben, child = _centre_with_child(db, "C-010")
+    db.session.add(
+        Vaccination(
+            child=child, vaccine_name="BCG", dose_number=1,
+            status="UPCOMING",
+        )
+    )
+    db.session.commit()
+
+    db.session.add(
+        Vaccination(
+            child=child, vaccine_name="BCG", dose_number=1,
+            status="UPCOMING",
+        )
+    )
+    with pytest.raises(IntegrityError):
+        db.session.commit()
+    db.session.rollback()
+
+    # A different dose number is allowed.
+    db.session.add(
+        Vaccination(
+            child=child, vaccine_name="BCG", dose_number=2,
+            status="UPCOMING",
+        )
+    )
+    db.session.commit()
+    assert db.session.query(Vaccination).count() == 2
+
+
+def test_beneficiary_scheme_unique_constraint(db):
+    from app.models import BeneficiaryScheme, WelfareScheme
+
+    _centre, beneficiary, _child = _centre_with_child(db, "C-011")
+    scheme = WelfareScheme(name="Constraint Scheme", is_active=True)
+    db.session.add(scheme)
+    db.session.flush()
+
+    db.session.add(
+        BeneficiaryScheme(
+            beneficiary_id=beneficiary.id, scheme_id=scheme.id
+        )
+    )
+    db.session.commit()
+
+    db.session.add(
+        BeneficiaryScheme(
+            beneficiary_id=beneficiary.id, scheme_id=scheme.id
+        )
+    )
+    with pytest.raises(IntegrityError):
+        db.session.commit()
+    db.session.rollback()
+
+
+def test_cascade_delete_beneficiary_removes_visits_interventions_alerts(db):
+    from app.models import (
+        Alert,
+        HomeVisit,
+        Intervention,
+        Vaccination,
+    )
+    from app.utils.constants import AlertSeverity, AlertType, VisitStatus, VisitType
+
+    _centre, beneficiary, _child = _centre_with_child(db, "C-012")
+    visit = HomeVisit(
+        beneficiary_id=beneficiary.id,
+        centre_id=beneficiary.centre_id,
+        visit_type=VisitType.ROUTINE,
+        scheduled_date=date.today(),
+        status=VisitStatus.SCHEDULED,
+    )
+    db.session.add(visit)
+    db.session.flush()
+    db.session.add_all(
+        [
+            Intervention(
+                home_visit_id=visit.id,
+                beneficiary_id=beneficiary.id,
+                intervention_type="Counselling",
+                intervention_date=date.today(),
+            ),
+            Alert(
+                beneficiary_id=beneficiary.id,
+                alert_type=AlertType.GROWTH_FOLLOW_UP,
+                severity=AlertSeverity.MEDIUM,
+                message="Delete cascade check.",
+            ),
+            Vaccination(
+                child=beneficiary.child, vaccine_name="BCG", dose_number=1,
+                status="UPCOMING",
+            ),
+        ]
+    )
+    db.session.commit()
+
+    db.session.delete(beneficiary)
+    db.session.commit()
+
+    assert db.session.query(HomeVisit).count() == 0
+    assert db.session.query(Intervention).count() == 0
+    assert db.session.query(Alert).count() == 0
+    assert db.session.query(Vaccination).count() == 0
+
+
+def test_deleting_child_cascades_attendance(db):
+    _centre, beneficiary, _child = _centre_with_child(db, "C-013")
+    db.session.add(
+        Attendance(
+            child_id=beneficiary.child.id,
+            centre_id=beneficiary.centre_id,
+            attendance_date=date.today(),
+            status=AttendanceStatus.PRESENT,
+        )
+    )
+    db.session.commit()
+
+    db.session.delete(beneficiary)
+    db.session.commit()
+
+    assert db.session.query(Attendance).count() == 0

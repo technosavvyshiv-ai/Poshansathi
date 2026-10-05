@@ -74,7 +74,9 @@ class Beneficiary(TimestampMixin, db.Model):
         "Intervention", back_populates="beneficiary", cascade="all, delete-orphan"
     )
     alerts = db.relationship(
-        "Alert", back_populates="beneficiary", cascade="save-update, merge"
+        "Alert",
+        back_populates="beneficiary",
+        passive_deletes=True,
     )
 
     def __repr__(self) -> str:  # pragma: no cover - debugging aid

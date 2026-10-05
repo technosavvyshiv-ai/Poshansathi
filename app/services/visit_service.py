@@ -235,7 +235,23 @@ def update_visit(
 
 
 def complete_visit(visit: HomeVisit, form, *, actor=None) -> HomeVisit:
-    """Mark a visit completed and record its completion date/notes."""
+    """Mark a visit completed and record its completion date/notes.
+
+    Only a ``SCHEDULED`` visit may be completed (the plan's workflow is
+    ``Scheduled → Completed``).  Enforced server-side so crafted POSTs cannot
+    complete a cancelled visit, resurrect a completed one, or backdate its
+    completion date.
+    """
+    if visit.status != VisitStatus.SCHEDULED:
+        raise ValidationError(
+            {
+                "visit": (
+                    "Only a scheduled visit can be completed. This visit is "
+                    f"{visit.status.value.title()}."
+                )
+            }
+        )
+
     cleaned, errors = validate_visit_completion_fields(form)
     if errors:
         raise ValidationError(errors)
@@ -251,7 +267,20 @@ def complete_visit(visit: HomeVisit, form, *, actor=None) -> HomeVisit:
 
 
 def cancel_visit(visit: HomeVisit, *, actor=None) -> HomeVisit:
-    """Cancel a visit (it no longer counts as a pending visit)."""
+    """Cancel a visit (it no longer counts as a pending visit).
+
+    Only a ``SCHEDULED`` visit may be cancelled so a completed visit keeps its
+    recorded completion data.
+    """
+    if visit.status != VisitStatus.SCHEDULED:
+        raise ValidationError(
+            {
+                "visit": (
+                    "Only a scheduled visit can be cancelled. This visit is "
+                    f"{visit.status.value.title()}."
+                )
+            }
+        )
     visit.status = VisitStatus.CANCELLED
     alert_service.sync_home_visit_pending(visit.beneficiary, actor=actor)
     db.session.commit()

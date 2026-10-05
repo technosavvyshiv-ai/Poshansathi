@@ -1,0 +1,31 @@
+{% macro metric_card(label, value, icon=None, tone=None, href=None, sub=None) %}
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card shadow-sm h-100">
+      <div class="card-body py-3">
+        <div class="small text-muted">
+          {% if icon %}<i class="bi {{ icon }} me-1"></i>{% endif %}{{ label }}
+        </div>
+        {% if href %}
+        <a class="h4 mb-0 d-block text-decoration-none {{ tone or '' }}" href="{{ href }}">{{ value }}</a>
+        {% else %}
+        <div class="h4 mb-0 {{ tone or '' }}">{{ value }}</div>
+        {% endif %}
+        {% if sub %}<div class="small text-muted">{{ sub }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+
+{% macro stat_card(label, value, icon=None, tone=None, sub=None) %}
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body py-3">
+        <div class="small text-muted">
+          {% if icon %}<i class="bi {{ icon }} me-1"></i>{% endif %}{{ label }}
+        </div>
+        <div class="h4 mb-0 {{ tone or '' }}">{{ value }}</div>
+        {% if sub %}<div class="small text-muted">{{ sub }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+{% endmacro %}
