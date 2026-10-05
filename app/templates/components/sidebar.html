@@ -49,6 +49,23 @@
       </a>
     </li>
 
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('reports.') }}"
+         href="{{ url_for('reports.index') }}">
+        <i class="bi bi-file-earmark-bar-graph me-2"></i> Reports
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('notifications.') }}"
+         href="{{ url_for('notifications.index') }}">
+        <i class="bi bi-bell me-2"></i> Notifications
+        {% if UnreadNotifications %}
+        <span class="badge rounded-pill text-bg-danger ms-1">{{ UnreadNotifications }}</span>
+        {% endif %}
+      </a>
+    </li>
+
     {% if current_user.role in [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.OFFICER] %}
     <li class="nav-item">
       <a class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('centres.') }}"

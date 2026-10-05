@@ -47,3 +47,42 @@ body {
   border-top: 1px solid #e6ece4;
   background: #ffffff;
 }
+
+/* --- Printable reports (Phase 12) --------------------------------------- */
+.report-meta {
+  font-size: 0.9rem;
+}
+
+@media print {
+  .app-navbar,
+  .sidebar,
+  .app-footer,
+  .d-print-none,
+  .no-print {
+    display: none !important;
+  }
+
+  main {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  .card {
+    border: 1px solid #dee2e6 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+
+  .table {
+    font-size: 0.85rem;
+  }
+
+  a[href]::after {
+    content: "";
+  }
+}

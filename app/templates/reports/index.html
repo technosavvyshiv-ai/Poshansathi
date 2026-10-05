@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% from 'reports/_macros.html' import report_title %}
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+{{ report_title(
+  'Reports',
+  'bi-file-earmark-bar-graph',
+  'Printable HTML reports with CSV export, built from live database data.',
+) }}
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-person-badge me-1"></i>Beneficiary reports
+      </div>
+      <div class="card-body">
+        <p class="small text-muted">
+          Enter a beneficiary ID to open the child/mother profile report, which
+          links to the growth, vaccination and maternal reports. You can also
+          print any of them and download CSV.
+        </p>
+        <form class="row g-2 align-items-end" method="get"
+              action="{{ url_for('reports.beneficiary_lookup') }}">
+          <div class="col-sm-8">
+            <label class="form-label small mb-1">Beneficiary ID</label>
+            <input type="number" min="1" class="form-control form-control-sm"
+                   name="beneficiary" placeholder="e.g. 1" required>
+          </div>
+          <div class="col-sm-4">
+            <button class="btn btn-primary btn-sm w-100" type="submit">
+              <i class="bi bi-box-arrow-up-right me-1"></i>Open
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-geo-alt me-1"></i>Monthly centre report
+      </div>
+      <div class="card-body">
+        <p class="small text-muted">
+          Centre-level activity for one calendar month (registrations, growth,
+          vaccination, maternal, attendance, nutrition, alerts and visits).
+        </p>
+        <form class="row g-2 align-items-end" method="get"
+              action="{{ url_for('reports.centre_lookup') }}">
+          <div class="col-sm-6">
+            <label class="form-label small mb-1">Centre</label>
+            <select class="form-select form-select-sm" name="centre" required>
+              {% for centre in centres %}
+              <option value="{{ centre.id }}">{{ centre.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-sm-4">
+            <label class="form-label small mb-1">Month</label>
+            <input type="month" class="form-control form-control-sm" name="month"
+                   value="{{ today.strftime('%Y-%m') }}">
+          </div>
+          <div class="col-sm-2">
+            <button class="btn btn-primary btn-sm w-100" type="submit">
+              <i class="bi bi-arrow-right"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-6 col-lg-4">
+    <a class="text-decoration-none" href="{{ url_for('reports.nutrition') }}">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h2 class="h6"><i class="bi bi-basket me-1"></i>Nutrition distribution report</h2>
+          <p class="small text-muted mb-0">
+            Stock issued to beneficiaries, filtered by centre, item, beneficiary
+            and date range.
+          </p>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <a class="text-decoration-none" href="{{ url_for('reports.schemes') }}">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h2 class="h6"><i class="bi bi-award me-1"></i>Scheme report</h2>
+          <p class="small text-muted mb-0">
+            Beneficiary scheme associations filtered by centre, scheme and
+            recorded status.
+          </p>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-6 col-lg-4">
+    <a class="text-decoration-none" href="{{ url_for('reports.nutrition', format='csv') }}">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h2 class="h6"><i class="bi bi-filetype-csv me-1"></i>CSV exports</h2>
+          <p class="small text-muted mb-0">
+            Every report page has a <strong>Download CSV</strong> button for the
+            currently applied filters.
+          </p>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<p class="text-muted small mt-3 mb-0">
+  <i class="bi bi-info-circle me-1"></i>
+  PDF/XLSX export is intentionally not implemented; printable HTML plus CSV
+  covers the project's reporting needs without adding dependencies.
+</p>
+{% endblock %}

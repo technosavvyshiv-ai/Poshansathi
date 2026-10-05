@@ -115,8 +115,15 @@ def _register_context_processors(app: Flask) -> None:
 
     @app.context_processor
     def inject_auth_context():
+        user = current_user()
+        unread = 0
+        if user is not None:
+            from app.services import notification_service
+
+            unread = notification_service.unread_count(user)
         return {
-            "current_user": current_user(),
+            "current_user": user,
+            "UnreadNotifications": unread,
             "UserRole": UserRole,
             "role_labels": ROLE_LABELS,
         }
@@ -134,7 +141,9 @@ def _register_blueprints(app: Flask) -> None:
     from app.routes.growth import bp as growth_bp
     from app.routes.main import bp as main_bp
     from app.routes.maternal import bp as maternal_bp
+    from app.routes.notifications import bp as notifications_bp
     from app.routes.nutrition import bp as nutrition_bp
+    from app.routes.reports import bp as reports_bp
     from app.routes.schemes import bp as schemes_bp
     from app.routes.vaccination import bp as vaccination_bp
     from app.routes.visits import bp as visits_bp
@@ -151,6 +160,8 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(alerts_bp)
     app.register_blueprint(visits_bp)
     app.register_blueprint(schemes_bp)
+    app.register_blueprint(reports_bp)
+    app.register_blueprint(notifications_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(main_bp)
 

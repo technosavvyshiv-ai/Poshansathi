@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% from 'reports/_macros.html' import report_actions, print_header, report_title %}
+{% block title %}Monthly centre report — {{ report.centre.name }}{% endblock %}
+
+{% block content %}
+{{ print_header('Monthly centre report', report.centre.name) }}
+{{ report_title(
+  'Monthly centre report',
+  'bi-calendar3',
+  report.centre.name ~ ' · ' ~ report.start.strftime('%b %Y'),
+  report_actions(
+    csv_url=url_for('reports.monthly_centre', centre_id=report.centre.id, format='csv', month=month_value),
+    back_url=url_for('reports.index'),
+    back_label='Reports',
+  ),
+) }}
+
+<div class="card shadow-sm mb-3 d-print-none">
+  <div class="card-body">
+    <form class="d-flex flex-wrap gap-2 align-items-end" method="get"
+          action="{{ url_for('reports.monthly_centre', centre_id=report.centre.id) }}">
+      <div>
+        <label class="form-label small mb-1">Month</label>
+        <input type="month" class="form-control form-control-sm" name="month" value="{{ month_value }}">
+      </div>
+      <div>
+        <button class="btn btn-outline-primary btn-sm" type="submit">
+          <i class="bi bi-funnel me-1"></i>Apply
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header bg-white fw-semibold">
+    {{ report.start.strftime('%d %b %Y') }} – {{ report.end.strftime('%d %b %Y') }}
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light"><tr><th>Metric</th><th class="text-end">Value</th></tr></thead>
+      <tbody>
+        {% for name, value in report.metrics %}
+        <tr>
+          <td class="small">{{ name }}</td>
+          <td class="small text-end fw-semibold">
+            {{ value ~ '%' if name.endswith('%') and value is not none else (value if value is not none else '—') }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

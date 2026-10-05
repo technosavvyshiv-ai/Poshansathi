@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% from 'reports/_macros.html' import report_actions, print_header, report_title %}
+{% block title %}Profile report — {{ report.beneficiary.full_name }}{% endblock %}
+
+{% block content %}
+{{ print_header('Beneficiary profile report', report.beneficiary.full_name) }}
+{{ report_title(
+  'Profile report',
+  'bi-person-badge',
+  report.beneficiary.full_name ~ ' · ' ~ (report.beneficiary.centre.name if report.beneficiary.centre else '—'),
+  report_actions(
+    csv_url=url_for('reports.child_profile', beneficiary_id=report.beneficiary.id, format='csv'),
+    back_url=url_for('beneficiaries.detail', beneficiary_id=report.beneficiary.id),
+    back_label='Profile',
+  ),
+) }}
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">Demographics</div>
+      <div class="card-body">
+        <dl class="row mb-0 small">
+          <dt class="col-5">Full name</dt><dd class="col-7">{{ report.beneficiary.full_name }}</dd>
+          <dt class="col-5">Type</dt><dd class="col-7">{{ report.beneficiary.beneficiary_type.value.replace('_', ' ').title() }}</dd>
+          <dt class="col-5">Date of birth</dt>
+          <dd class="col-7">{{ report.beneficiary.date_of_birth.strftime('%d %b %Y') if report.beneficiary.date_of_birth else '—' }}</dd>
+          <dt class="col-5">Gender</dt><dd class="col-7">{{ report.beneficiary.gender.value.title() if report.beneficiary.gender else '—' }}</dd>
+          <dt class="col-5">Guardian</dt><dd class="col-7">{{ report.beneficiary.guardian_name or '—' }}</dd>
+          <dt class="col-5">Contact</dt><dd class="col-7">{{ report.beneficiary.contact or '—' }}</dd>
+          <dt class="col-5">Address</dt><dd class="col-7">{{ report.beneficiary.address or '—' }}</dd>
+          <dt class="col-5">Registered</dt>
+          <dd class="col-7">{{ report.beneficiary.registration_date.strftime('%d %b %Y') if report.beneficiary.registration_date else '—' }}</dd>
+          <dt class="col-5">Status</dt>
+          <dd class="col-7">{{ report.beneficiary.status.value.title() }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">
+        {{ 'Child profile' if report.child else 'Maternal profile' }}
+      </div>
+      <div class="card-body">
+        {% if report.child %}
+        {% set child = report.child %}
+        <dl class="row mb-0 small">
+          <dt class="col-5">Birth weight</dt><dd class="col-7">{{ child.birth_weight_kg ~ ' kg' if child.birth_weight_kg else '—' }}</dd>
+          <dt class="col-5">Birth height</dt><dd class="col-7">{{ child.birth_height_cm ~ ' cm' if child.birth_height_cm else '—' }}</dd>
+          <dt class="col-5">Blood group</dt><dd class="col-7">{{ child.blood_group or '—' }}</dd>
+          <dt class="col-5">Linked mother</dt>
+          <dd class="col-7">{{ child.mother.beneficiary.full_name if child.mother else '—' }}</dd>
+          <dt class="col-5">Growth records</dt><dd class="col-7">{{ report.growth|length }}</dd>
+          <dt class="col-5">Vaccination records</dt><dd class="col-7">{{ report.vaccination|length }}</dd>
+        </dl>
+        {% elif report.beneficiary.mother %}
+        {% set mother = report.beneficiary.mother %}
+        <dl class="row mb-0 small">
+          <dt class="col-5">Age</dt><dd class="col-7">{{ mother.age or '—' }}</dd>
+          <dt class="col-5">Husband name</dt><dd class="col-7">{{ mother.husband_name or '—' }}</dd>
+          <dt class="col-5">Pregnancy number</dt><dd class="col-7">{{ mother.pregnancy_number or '—' }}</dd>
+          <dt class="col-5">Expected delivery</dt>
+          <dd class="col-7">{{ mother.expected_delivery_date.strftime('%d %b %Y') if mother.expected_delivery_date else '—' }}</dd>
+          <dt class="col-5">Risk level</dt><dd class="col-7">{{ mother.current_risk_level.value.title() if mother.current_risk_level else '—' }}</dd>
+          <dt class="col-5">Maternal health records</dt><dd class="col-7">{{ report.beneficiary.mother.health_records|length }}</dd>
+        </dl>
+        {% else %}
+        <p class="text-muted small mb-0">No profile details on file.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100"><div class="card-body py-3">
+      <div class="small text-muted">Vaccination pending</div>
+      <div class="h4 mb-0">{{ report.vaccination_summary.pending if report.vaccination_summary else 0 }}</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100"><div class="card-body py-3">
+      <div class="small text-muted">Attendance</div>
+      <div class="h4 mb-0">{{ report.attendance_summary.attendance_percentage ~ '%' if report.attendance_summary and report.attendance_summary.attendance_percentage is not none else '—' }}</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100"><div class="card-body py-3">
+      <div class="small text-muted">Scheme links</div>
+      <div class="h4 mb-0">{{ report.schemes|length }}</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100"><div class="card-body py-3">
+      <div class="small text-muted">Alerts / visits</div>
+      <div class="h4 mb-0">{{ report.alerts|length }} / {{ report.visits|length }}</div>
+    </div></div>
+  </div>
+</div>
+
+{% if report.child %}
+<div class="card shadow-sm mb-3">
+  <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-graph-up-arrow me-1"></i>Growth (latest first)</span>
+    <a class="small d-print-none" href="{{ url_for('reports.growth', beneficiary_id=report.beneficiary.id) }}">Full growth report →</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead class="table-light"><tr><th>Date</th><th>Weight</th><th>Height</th><th>MUAC</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for item in report.growth[:8] %}
+        <tr>
+          <td class="small">{{ item.record.measurement_date.strftime('%d %b %Y') }}</td>
+          <td class="small">{{ item.record.weight_kg ~ ' kg' if item.record.weight_kg is not none else '—' }}</td>
+          <td class="small">{{ item.record.height_cm ~ ' cm' if item.record.height_cm is not none else '—' }}</td>
+          <td class="small">{{ item.record.muac_cm ~ ' cm' if item.record.muac_cm is not none else '—' }}</td>
+          <td class="small">{{ item.status.value.replace('_', ' ').title() if item.status else '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-3">No growth records.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+  <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-shield-plus me-1"></i>Vaccination (latest first)</span>
+    <a class="small d-print-none" href="{{ url_for('reports.vaccination', beneficiary_id=report.beneficiary.id) }}">Full vaccination report →</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead class="table-light"><tr><th>Vaccine</th><th>Dose</th><th>Scheduled</th><th>Administered</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for item in report.vaccination[:8] %}
+        <tr>
+          <td class="small fw-semibold">{{ item.record.vaccine_name }}</td>
+          <td class="small">{{ item.record.dose_number }}</td>
+          <td class="small">{{ item.record.scheduled_date.strftime('%d %b %Y') if item.record.scheduled_date else '—' }}</td>
+          <td class="small">{{ item.record.administered_date.strftime('%d %b %Y') if item.record.administered_date else '—' }}</td>
+          <td class="small">{{ item.display_label }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-3">No vaccination records.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card shadow-sm mb-3">
+  <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-heart-pulse me-1"></i>Maternal health (latest first)</span>
+    {% if report.beneficiary.mother %}
+    <a class="small d-print-none" href="{{ url_for('reports.maternal', mother_id=report.beneficiary.mother.id) }}">Full maternal report →</a>
+    {% endif %}
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead class="table-light"><tr><th>Visit</th><th>Month</th><th>Weight</th><th>Hb</th><th>Risk</th><th>Next follow-up</th></tr></thead>
+      <tbody>
+        {% for item in (report.beneficiary.mother.health_records if report.beneficiary.mother else []) %}
+        <tr>
+          <td class="small">{{ item.visit_date.strftime('%d %b %Y') }}</td>
+          <td class="small">{{ item.pregnancy_month or '—' }}</td>
+          <td class="small">{{ item.weight_kg ~ ' kg' if item.weight_kg is not none else '—' }}</td>
+          <td class="small">{{ item.haemoglobin ~ ' g/dL' if item.haemoglobin is not none else '—' }}</td>
+          <td class="small">{{ item.risk_category.value.title() if item.risk_category else '—' }}</td>
+          <td class="small">{{ item.next_follow_up_date.strftime('%d %b %Y') if item.next_follow_up_date else '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-3">No ANC records.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-award me-1"></i>Scheme associations</div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light"><tr><th>Scheme</th><th>Status</th><th>Applied</th></tr></thead>
+          <tbody>
+            {% for link in report.schemes %}
+            <tr>
+              <td class="small">{{ link.scheme.name if link.scheme else '—' }}</td>
+              <td class="small">{{ link.status.value.title() }}</td>
+              <td class="small">{{ link.applied_date.strftime('%d %b %Y') if link.applied_date else '—' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="text-center text-muted py-3">No schemes linked.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-exclamation-triangle me-1"></i>Alerts</div>
+      <div class="list-group list-group-flush">
+        {% for alert in report.alerts %}
+        <div class="list-group-item small">
+          <span class="badge text-bg-secondary me-1">{{ alert.severity.value.title() }}</span>
+          {{ alert.alert_type.value.replace('_', ' ').title() }} — {{ alert.status.value.title() }}
+          <div class="text-muted">{{ alert.message }}</div>
+        </div>
+        {% else %}
+        <div class="list-group-item text-muted small py-3 text-center">No alerts.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-house-heart me-1"></i>Home visits &amp; interventions</div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead class="table-light"><tr><th>Scheduled</th><th>Type</th><th>Status</th><th>Follow-up</th><th>Interventions</th></tr></thead>
+          <tbody>
+            {% for visit in report.visits %}
+            <tr>
+              <td class="small">{{ visit.scheduled_date.strftime('%d %b %Y') }}</td>
+              <td class="small">{{ visit.visit_type.value.replace('_', ' ').title() }}</td>
+              <td class="small">{{ visit.status.value.title() }}</td>
+              <td class="small">{{ visit.follow_up_date.strftime('%d %b %Y') if visit.follow_up_date else '—' }}</td>
+              <td class="small">
+                {% for item in visit.interventions %}
+                  <div>{{ item.intervention_type }} ({{ item.intervention_date.strftime('%d %b %Y') }})</div>
+                {% else %}—{% endfor %}
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center text-muted py-3">No home visits.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

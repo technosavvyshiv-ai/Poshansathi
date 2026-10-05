@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% from 'reports/_macros.html' import report_actions, print_header, report_title %}
+{% block title %}Nutrition distribution report{% endblock %}
+
+{% block content %}
+{{ print_header('Nutrition distribution report', 'Centre stock issued to beneficiaries') }}
+{{ report_title(
+  'Nutrition distribution report',
+  'bi-basket',
+  'Stock issued to beneficiaries, filtered by centre, item, beneficiary and date range.',
+  report_actions(
+    csv_url=url_for('reports.nutrition', format='csv', centre=centre_raw, item=item_raw, beneficiary=beneficiary_raw, start=start_raw, end=end_raw),
+    back_url=url_for('reports.index'),
+    back_label='Reports',
+  ),
+) }}
+
+<div class="card shadow-sm mb-3 d-print-none">
+  <div class="card-body">
+    <form class="row g-2 align-items-end" method="get" action="{{ url_for('reports.nutrition') }}">
+      {% if not scope_centre_id %}
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Centre</label>
+        <select class="form-select form-select-sm" name="centre">
+          <option value="">All centres</option>
+          {% for centre in centres %}
+          <option value="{{ centre.id }}" {{ 'selected' if centre_raw == centre.id|string }}>{{ centre.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Item</label>
+        <select class="form-select form-select-sm" name="item">
+          <option value="">All items</option>
+          {% for item in items %}
+          <option value="{{ item.id }}" {{ 'selected' if item_raw == item.id|string }}>{{ item.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1">Beneficiary ID</label>
+        <input type="number" min="1" class="form-control form-control-sm" name="beneficiary"
+               value="{{ beneficiary_raw }}" placeholder="Optional">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1">From</label>
+        <input type="date" class="form-control form-control-sm" name="start" value="{{ start_raw }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1">To</label>
+        <input type="date" class="form-control form-control-sm" name="end" value="{{ end_raw }}">
+      </div>
+      <div class="col-12">
+        <button class="btn btn-outline-primary btn-sm" type="submit">
+          <i class="bi bi-funnel me-1"></i>Apply filter
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100"><div class="card-body py-3">
+      <div class="small text-muted">Distributions</div>
+      <div class="h4 mb-0">{{ report.count }}</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100"><div class="card-body py-3">
+      <div class="small text-muted">Total quantity</div>
+      <div class="h4 mb-0">{{ report.total_quantity }}</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100"><div class="card-body py-3">
+      <div class="small text-muted">From</div>
+      <div class="h5 mb-0">{{ report.start.strftime('%d %b %Y') if report.start else '—' }}</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card shadow-sm h-100"><div class="card-body py-3">
+      <div class="small text-muted">To</div>
+      <div class="h5 mb-0">{{ report.end.strftime('%d %b %Y') if report.end else '—' }}</div>
+    </div></div>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr><th>Date</th><th>Beneficiary</th><th>Centre</th><th>Item</th><th>Quantity</th><th>Worker</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        {% for row in report.rows %}
+        <tr>
+          <td class="small">{{ row.distribution_date.strftime('%d %b %Y') }}</td>
+          <td class="small">{{ row.beneficiary.full_name if row.beneficiary else '—' }}</td>
+          <td class="small">{{ row.centre.name if row.centre else '—' }}</td>
+          <td class="small fw-semibold">{{ row.item.name if row.item else '—' }}</td>
+          <td class="small">{{ row.quantity }} {{ row.item.unit if row.item else '' }}</td>
+          <td class="small">{{ row.worker.full_name if row.worker else '—' }}</td>
+          <td class="small text-muted">{{ row.notes or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-center text-muted py-5">No distributions match the filter.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -9,6 +9,15 @@
 
     <div class="ms-auto d-flex align-items-center gap-2 gap-md-3">
       {% if current_user %}
+        <a class="btn btn-sm btn-outline-light position-relative"
+           href="{{ url_for('notifications.index') }}" title="Notifications">
+          <i class="bi bi-bell"></i>
+          {% if UnreadNotifications %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger">
+            {{ UnreadNotifications }}
+          </span>
+          {% endif %}
+        </a>
         <span class="badge text-bg-light">
           {{ role_labels.get(current_user.role, current_user.role.value) }}
         </span>
