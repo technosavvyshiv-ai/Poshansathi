@@ -160,6 +160,7 @@ This project is an academic prototype and uses synthetic/demo data.
 **Core application completed and tested.**
 
 ---
+## Demo Screenshots Are attached in Screenshots Folder. 
 
 ### PoshanSathi
 *Digitally empowering Anganwadi Centres for healthier mothers and children.*
